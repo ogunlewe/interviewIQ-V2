@@ -37,10 +37,12 @@ import FeedbackPanel from "./feedback-panel"
 import CodeEditor from "./code-editor"
 import { useChat } from "../lib/chat-service"
 import InterviewerProfile from "./interviewer-profile"
-import VideoCallInterface from "./video-call-interface"
+import EnhancedVideoCallInterface from "./enhanced-video-call-interface" // Add this import
 import Whiteboard from "./whiteboard"
 import NoteTaker from "./note-taker"
-import { SpeechService, SpeechRecognitionService } from "../lib/speech-service"
+import { SpeechRecognitionService } from "../lib/speech-service"
+import { UnifiedSpeechService } from "../lib/unified-speech-service" // Add this import
+import { Input } from "./ui/input" // Add this import
 
 export default function InterviewSimulator() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>(["JavaScript", "React", "Data Structures"])
@@ -74,23 +76,43 @@ export default function InterviewSimulator() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const thinkingTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const speechServiceRef = useRef<SpeechService | null>(null)
+  const speechServiceRef = useRef<UnifiedSpeechService | null>(null)
   const speechRecognitionRef = useRef<SpeechRecognitionService | null>(null)
+
+  // Add new state variables for ElevenLabs
+  const [useElevenLabs, setUseElevenLabs] = useState<boolean>(false)
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState<string>("")
+  const [elevenLabsVoiceId, setElevenLabsVoiceId] = useState<string>("")
+  const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ id: string; name: string }>>([])
 
   // Initialize speech services
   useEffect(() => {
     try {
-      speechServiceRef.current = SpeechService.getInstance()
+      speechServiceRef.current = UnifiedSpeechService.getInstance()
       speechRecognitionRef.current = SpeechRecognitionService.getInstance()
       setSpeechEnabled(true)
 
       // Get available voices
       if (speechServiceRef.current) {
-        const voices = speechServiceRef.current.getVoices()
+        // Browser voices
+        const voices = speechServiceRef.current.getBrowserVoices()
         setAvailableVoices(voices)
-        const preferredVoice = speechServiceRef.current.getPreferredVoice()
+        const preferredVoice = speechServiceRef.current.getPreferredBrowserVoice()
         if (preferredVoice) {
           setSelectedVoice(preferredVoice)
+        }
+
+        // ElevenLabs voices
+        const elVoices = speechServiceRef.current.getElevenLabsVoices()
+        setElevenLabsVoices(elVoices)
+
+        // Check for stored API key
+        const storedApiKey = localStorage.getItem("elevenLabsApiKey")
+        if (storedApiKey) {
+          setElevenLabsApiKey(storedApiKey)
+          speechServiceRef.current.setElevenLabsApiKey(storedApiKey)
+          setUseElevenLabs(true)
+          speechServiceRef.current.setUseElevenLabs(true)
         }
       }
     } catch (error) {
@@ -326,17 +348,8 @@ export default function InterviewSimulator() {
 
     setIsSpeaking(true)
 
-    // Remove any markdown formatting or code blocks that might interfere with speech
-    const cleanMessage = message
-      .replace(/```[\s\S]*?```/g, "code block omitted")
-      .replace(/`([^`]+)`/g, "$1")
-      .replace(/\*\*([^*]+)\*\*/g, "$1")
-      .replace(/\*([^*]+)\*/g, "$1")
-      .replace(/\[([^\]]+)\]$$[^)]+$$/g, "$1")
-
-    speechServiceRef.current.speak(cleanMessage, {
-      rate: 0.9,
-      pitch: 1.1,
+    // Clean message handling is now done in the UnifiedSpeechService
+    speechServiceRef.current.speak(message, {
       voice: selectedVoice || undefined,
       onEnd: () => {
         setIsSpeaking(false)
@@ -457,6 +470,49 @@ export default function InterviewSimulator() {
   }
 
   const interviewer = getInterviewerDetails()
+
+  // Add a function to handle message sending for the enhanced video call interface
+  const handleSendMessage = async (message: string) => {
+    if (!message.trim()) return
+
+    // This replicates what handleSubmit would do but with a custom message
+    // You'll need to adapt this based on your actual chat implementation
+    const fakeEvent = {
+      preventDefault: () => {},
+      target: {
+        reset: () => {},
+      },
+    } as unknown as React.FormEvent<HTMLFormElement>
+
+    // Update the input first
+    handleInputChange({ target: { value: message } } as React.ChangeEvent<HTMLTextAreaElement>)
+
+    // Then submit after a short delay to ensure the input is updated
+    setTimeout(() => {
+      handleSubmit(fakeEvent)
+    }, 10)
+  }
+
+  const handleSetElevenLabsApiKey = () => {
+    if (!elevenLabsApiKey.trim()) return;
+    
+    localStorage.setItem("elevenLabsApiKey", elevenLabsApiKey)
+    if (speechServiceRef.current) {
+        speechServiceRef.current.setElevenLabsApiKey(elevenLabsApiKey)
+        // Enable ElevenLabs after setting the API key
+        setUseElevenLabs(true)
+        speechServiceRef.current.setUseElevenLabs(true)
+        
+        // Fetch and set available voices
+        const voices = speechServiceRef.current.getElevenLabsVoices()
+        setElevenLabsVoices(voices)
+    }
+  }
+
+  const handleSetElevenLabsVoice = (voiceId: string) => {
+    setElevenLabsVoiceId(voiceId)
+    speechServiceRef.current?.setElevenLabsVoiceId(voiceId)
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -589,7 +645,9 @@ export default function InterviewSimulator() {
                 </div>
 
                 {showVideoCall ? (
-                  <VideoCallInterface
+                  <EnhancedVideoCallInterface
+                    messages={displayMessages}
+                    onSendMessage={handleSendMessage}
                     audioEnabled={audioEnabled}
                     videoEnabled={videoEnabled}
                     onToggleAudio={handleToggleAudio}
@@ -598,6 +656,18 @@ export default function InterviewSimulator() {
                     interviewerName={interviewer.name}
                     interviewerAvatar={interviewer.avatar}
                     networkQuality={networkQuality}
+                    isLoading={isLoading}
+                    isSpeaking={isSpeaking}
+                    onStopSpeaking={stopSpeaking}
+                    continuousSpeech={continuousSpeech}
+                    onToggleContinuousSpeech={toggleContinuousSpeech}
+                    spokenMessageIds={spokenMessageIds}
+                    onMessageSpoken={(messageId) => {
+                      const message = displayMessages.find((m) => m.id === messageId)
+                      if (message) {
+                        speakMessage(message.content, false, messageId)
+                      }
+                    }}
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1035,6 +1105,64 @@ export default function InterviewSimulator() {
 
                     {!window.speechSynthesis && (
                       <p className="text-xs text-red-500">Your browser doesn't support speech synthesis.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium mb-2">ElevenLabs Integration (Premium Voice)</h3>
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="enable-elevenlabs"
+                        className="mr-2"
+                        checked={useElevenLabs}
+                        onChange={() => {
+                          const newValue = !useElevenLabs
+                          setUseElevenLabs(newValue)
+                          if (speechServiceRef.current) {
+                            speechServiceRef.current.setUseElevenLabs(newValue)
+                          }
+                        }}
+                        disabled={!elevenLabsApiKey}
+                      />
+                      <label htmlFor="enable-elevenlabs" className="text-sm">
+                        Use ElevenLabs for more natural voice (requires API key)
+                      </label>
+                    </div>
+
+                    {!useElevenLabs && (
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="password"
+                          placeholder="Enter ElevenLabs API Key"
+                          value={elevenLabsApiKey}
+                          onChange={(e) => setElevenLabsApiKey(e.target.value)}
+                          className="flex-grow"
+                        />
+                        <Button size="sm" onClick={handleSetElevenLabsApiKey} disabled={!elevenLabsApiKey}>
+                          Save Key
+                        </Button>
+                      </div>
+                    )}
+
+                    {useElevenLabs && (
+                      <div className="space-y-2">
+                        <label className="text-sm block">ElevenLabs Voice</label>
+                        <select
+                          className="w-full p-2 border rounded-md bg-background"
+                          onChange={(e) => handleSetElevenLabsVoice(e.target.value)}
+                          value={elevenLabsVoiceId}
+                        >
+                          <option value="">Select a premium voice</option>
+                          {elevenLabsVoices.map((voice) => (
+                            <option key={voice.id} value={voice.id}>
+                              {voice.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
                   </div>
                 </div>
