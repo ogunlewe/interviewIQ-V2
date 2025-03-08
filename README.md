@@ -1,44 +1,41 @@
-# interviewIQ 🚀
+# DevInterviewPro: Ace Your Software Engineering Interview! 🚀
 
-Ace your next software engineering interview with interviewIQ, your AI-powered practice partner. Get realistic interview experience, instant feedback, and personalized insights to level up your skills.
-
-## Description 🌟
-
-interviewIQ is a React/Typescript application designed to simulate technical interviews. Using the Gemini AI model, it provides a dynamic and interactive interview experience. Practice answering questions on various topics, receive constructive feedback, and track your progress to become interview-ready!
+DevInterviewPro is your AI-powered interview simulator designed to help you nail your next software engineering interview. Practice with realistic questions, get instant feedback, and level up your skills. Whether you're a beginner or an expert, DevInterviewPro is here to help you succeed.
 
 ## Key Features ✨
 
-*   **AI-Powered Interviews:** Experience realistic technical interviews powered by the Gemini AI model.
-*   **Customizable Topics:** Select specific topics to focus your practice, ranging from JavaScript to Data Structures.
-*   **Difficulty Levels:** Choose your preferred difficulty level (Beginner, Intermediate, Advanced, Expert) to match your skill set.
-*   **Instant Feedback:** Get immediate feedback on your answers, including a rating and suggestions for improvement.
-*   **Performance Tracking:** Monitor your overall performance and identify areas for improvement.
-*   **Theme Support:** Enjoy a personalized experience with light and dark theme options.
+- **Realistic Interview Simulation:** Experience interviews that mimic real-world technical discussions.
+- **Instant Feedback:** Get immediate feedback on your answers and overall performance.
+- **Customizable Settings:** Tailor the interview to your specific needs with adjustable difficulty levels, company profiles, and interviewer styles.
+- **Interactive Tools:** Use the built-in code editor, whiteboard, and note-taking tool to enhance your preparation.
+- **Comprehensive Reports:** Track your progress and identify areas for improvement with detailed performance reports.
+- **Voice Activated Mode:** Use the built-in speech to text engine to answer questions and get answers read to you using the text-to-speech capabilities.
+- **Video Call Interface:** Simulate a real interview experience with audio and video support.
 
-## Technologies Used 🔧
+## Technologies Used 💻
 
-| Category         | Technology                                      | Description                                                                 |
-| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
-| Frontend         | React                                           | JavaScript library for building user interfaces                             |
-| Language         | TypeScript                                      | Superset of JavaScript that adds static typing                               |
-| Build Tool       | Vite                                            | Fast build tool for modern web development                                  |
-| AI               | Google Gemini                                   | Generative AI model used for interview questions and feedback               |
-| UI Library       | Radix UI, lucide-react                          | Set of accessible UI primitives and icons                                      |
-| Styling          | Tailwind CSS, tailwindcss-animate, clsx        | Utility-first CSS framework                                                |
-| Routing          | react-router-dom                                | Standard library for routing in React applications                          |
-| State Management | React Hooks                                     | For managing component state and side effects                               |
-| Other            | cors, dotenv, express                           | Middleware for enabling CORS, loading environment variables, and setting up server |
+| Category         | Technology                               | Description                                                                                                |
+| ---------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Frontend         | React                                    | A JavaScript library for building user interfaces.                                                         |
+|                  | TypeScript                               | A typed superset of JavaScript that compiles to plain JavaScript.                                         |
+|                  | Tailwind CSS                             | A utility-first CSS framework for rapidly designing custom designs.                                         |
+|                  | Radix UI                                 | A set of unstyled, accessible UI primitives.                                                              |
+|                  | Lucide React                             | Beautifully simple, pixel-perfect icons.                                                                    |
+| Backend          | Node.js                                  | A JavaScript runtime built on Chrome's V8 JavaScript engine.                                                |
+|                  | Express                                  | A fast, unopinionated, minimalist web framework for Node.js.                                             |
+| AI               | Google Gemini                             | Google's next generation AI model                                                                          |
+| Build Tool       | Vite                                     | A fast, lightweight build tool for modern web development.                                                   |
 
-## Installation 📦
+## Installation 🔧
 
-Follow these steps to get interviewIQ up and running on your local machine:
+Follow these steps to get DevInterviewPro up and running on your local machine:
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
 
-    ```bash
-    git clone <repository_url>
-    cd interviewIQ
-    ```
+   ```bash
+   git clone <repository-url>
+   cd interviewIQ
+   ```
 
 2.  **Install dependencies:**
 
@@ -46,45 +43,66 @@ Follow these steps to get interviewIQ up and running on your local machine:
     npm install
     ```
 
-3.  **Set up environment variables:**
-
-    *   Create a `.env.local` file in the root directory.
-    *   Add your Gemini API key:
+3.  **Create a `.env.local` file** in the root directory and add your Gemini API key:
 
     ```
     GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-    FRONTEND_URL=http://localhost:5173 # or the URL where your frontend is running
-    PORT=3001 # Optional: Change the backend port if needed
+    FRONTEND_URL=http://localhost:5173
+    PORT=3001
     ```
 
-4.  **Start the backend server:**
+    Make sure to replace `YOUR_GEMINI_API_KEY` with your actual Gemini API key.  Also, ensure `FRONTEND_URL` matches the port your Vite development server runs on.
 
-    ```bash
-    node server.js
-    ```
+4. **Run the backend server:**
 
-5.  **Start the development server:**
+   ```bash
+   node server.js
+   ```
 
-    ```bash
-    npm run dev
-    ```
+    Or use nodemon
 
-    This will start the React application, usually on `http://localhost:5173`.
+   ```bash
+   nodemon server.js
+   ```
 
-## Usage 🧑‍💻
+5. **Start the development server:**
 
-1.  **Open the application** in your web browser.
-2.  **Configure your interview settings** in the "Settings" tab:
-    *   Select the desired difficulty level (Beginner, Intermediate, Advanced, Expert).
-    *   Choose the topics you want to be quizzed on.
-3.  **Start the interview** in the "Interview" tab.
-4.  **Answer the questions** posed by the AI interviewer.
-5.  **Receive instant feedback** on your answers.
-6.  **Track your performance** and identify areas for improvement in the feedback panel.
+   ```bash
+   npm run dev
+   ```
+
+   This will start the React application in development mode. Open your browser and navigate to `http://localhost:5173` (or the port your Vite server is running on).
+
+## Usage 💡
+
+1. **Home Page:** When you first open the application, you'll be greeted with an introduction to DevInterviewPro and its features.
+2. **Configuration:** Tailor the interview to your needs using the settings tab.
+    - Choose a difficulty level (Beginner, Intermediate, Advanced, Expert).
+    - Select a company profile (Tech Startup, Enterprise, FAANG-level).
+    - Pick an interviewer style (Friendly, Neutral, Challenging).
+    - Select the topics you want to be interviewed on.
+3. **Interview Session:** Click "Start Your Interview" to begin. The interview session will guide you through various stages, including:
+    - Introduction and background questions
+    - Technical knowledge assessment
+    - Coding challenge
+    - System design discussion
+    - Behavioral questions
+    - Candidate questions and wrap-up
+
+4. **Answering Questions:** Type your answers in the provided textarea and submit. You can also use the thinking time button to simulate taking time to think about your answer.
+5. **Interactive Tools:**
+    - Use the code editor for coding challenges.
+    - Open the whiteboard for system design discussions.
+    - Take notes during the interview using the note-taking tool.
+6.  **Speech to text:** If speech to text is enabled in settings, press the "Speak Answer" button, and begin speaking.  The text box will automatically populate as you speak.
+7. **Text to speech:** If enabled in settings, the interviewer's questions and feedback will be read to you using your chosen voice.
+8. **Feedback:**  After answering questions, you'll get feedback on your answer and overall performance in the right side bar.
+9. **Report:** Track your progress in settings.
+10. **Customization**:  Customize available voices, toggle continuous speech mode, and more.
 
 ## Contributing 🤝
 
-We welcome contributions to interviewIQ! Here's how you can help:
+We welcome contributions to DevInterviewPro! Here's how you can help:
 
 1.  **Fork the repository.**
 2.  **Create a new branch** for your feature or bug fix:
@@ -97,10 +115,10 @@ We welcome contributions to interviewIQ! Here's how you can help:
 4.  **Push your branch** to your forked repository.
 5.  **Submit a pull request** to the main repository.
 
-Please ensure your code follows the project's coding standards and includes appropriate tests.
+We appreciate your contributions!
 
-## License
+## License 📄
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is under the [MIT License](LICENSE).
 
 [![Built with Dokugen](https://img.shields.io/badge/Built%20with-Dokugen-brightgreen)](https://github.com/samueltuoyo15/Dokugen)
