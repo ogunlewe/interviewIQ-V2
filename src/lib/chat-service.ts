@@ -6,7 +6,7 @@ import { generateUniqueId } from "./utils";
 
 // API URL - can be configured based on environment
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3001/chat";
+  import.meta.env.VITE_API_URL || "http://localhost:3001/api/chat";
 
 export interface Message {
   id: string;
@@ -19,16 +19,24 @@ export async function sendMessage(
   messages: Message[]
 ): Promise<{ response: string }> {
   try {
+    console.log('Sending request to:', API_URL); // Debug log
+    console.log('Messages:', messages); // Debug log
+    
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
       body: JSON.stringify({ messages }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text(); // Get the raw response text
+      console.error('Server response:', response.status, errorText); // Debug log
+      const errorData = JSON.parse(errorText);
       throw new Error(
-        errorData.error || "Failed to get response from the server"
+        errorData.error || `Server error: ${response.status}`
       );
     }
 
