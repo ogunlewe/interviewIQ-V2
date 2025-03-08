@@ -1,23 +1,17 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import { Textarea } from "./ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/seperator";
-import { ScrollArea } from "./ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Alert, AlertDescription } from "./ui/alert";
+import { useState, useEffect, useRef } from "react"
+import { Button } from "./ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card"
+import { Textarea } from "./ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
+import { Badge } from "./ui/badge"
+import { Separator } from "./ui/seperator"
+import { ScrollArea } from "./ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { Alert, AlertDescription } from "./ui/alert"
 import {
   Send,
   RefreshCw,
@@ -37,73 +31,107 @@ import {
   StickyNote,
   Layers,
   MessageSquare,
-} from "lucide-react";
-import TopicSelector from "./topic-selector";
-import FeedbackPanel from "./feedback-panel";
-import CodeEditor from "./code-editor";
-import { useChat } from "../lib/chat-service";
-import InterviewerProfile from "./interview-profile";
-import VideoCallInterface from "../components/video-call-interface";
-import Whiteboard from "../components/whiteboard";
-import NoteTaker from "../components/note-taker";
-import { SpeechService, SpeechRecognitionService } from "../lib/speech-service";
+} from "lucide-react"
+import TopicSelector from "./topic-selector"
+import FeedbackPanel from "./feedback-panel"
+import CodeEditor from "./code-editor"
+import { useChat } from "../lib/chat-service"
+import InterviewerProfile from "./interviewer-profile"
+import VideoCallInterface from "./video-call-interface"
+import Whiteboard from "./whiteboard"
+import NoteTaker from "./note-taker"
+import { SpeechService, SpeechRecognitionService } from "../lib/speech-service"
 
 export default function InterviewSimulator() {
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([
-    "JavaScript",
-    "React",
-    "Data Structures",
-  ]);
-  const [difficulty, setDifficulty] = useState<string>("intermediate");
-  const [activeTab, setActiveTab] = useState<string>("interview");
-  const [showFeedback, setShowFeedback] = useState<boolean>(false);
-  const [interviewStage, setInterviewStage] = useState<string>("intro");
-  const [interviewStarted, setInterviewStarted] = useState<boolean>(false);
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
-  const [showCodeEditor, setShowCodeEditor] = useState<boolean>(false);
-  const [showWhiteboard, setShowWhiteboard] = useState<boolean>(false);
-  const [showNotes, setShowNotes] = useState<boolean>(false);
-  const [isThinking, setIsThinking] = useState<boolean>(false);
-  const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
-  const [videoEnabled, setVideoEnabled] = useState<boolean>(false);
-  const [interviewerMood, setInterviewerMood] = useState<string>("neutral");
-  const [companyProfile, setCompanyProfile] = useState<string>("tech-startup");
-  const [showVideoCall, setShowVideoCall] = useState<boolean>(false);
-  const [networkQuality, setNetworkQuality] = useState<number>(3); // 0-3, where 3 is excellent
-  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
-  const [isListening, setIsListening] = useState<boolean>(false);
-  const [speechEnabled, setSpeechEnabled] = useState<boolean>(false);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["JavaScript", "React", "Data Structures"])
+  const [difficulty, setDifficulty] = useState<string>("intermediate")
+  const [activeTab, setActiveTab] = useState<string>("interview")
+  const [showFeedback, setShowFeedback] = useState<boolean>(false)
+  const [interviewStage, setInterviewStage] = useState<string>("intro")
+  const [interviewStarted, setInterviewStarted] = useState<boolean>(false)
+  const [elapsedTime, setElapsedTime] = useState<number>(0)
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false)
+  const [showCodeEditor, setShowCodeEditor] = useState<boolean>(false)
+  const [showWhiteboard, setShowWhiteboard] = useState<boolean>(false)
+  const [showNotes, setShowNotes] = useState<boolean>(false)
+  const [isThinking, setIsThinking] = useState<boolean>(false)
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(false)
+  const [videoEnabled, setVideoEnabled] = useState<boolean>(false)
+  const [interviewerMood, setInterviewerMood] = useState<string>("neutral")
+  const [companyProfile, setCompanyProfile] = useState<string>("tech-startup")
+  const [showVideoCall, setShowVideoCall] = useState<boolean>(false)
+  const [networkQuality, setNetworkQuality] = useState<number>(3) // 0-3, where 3 is excellent
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
+  const [isListening, setIsListening] = useState<boolean>(false)
+  const [speechEnabled, setSpeechEnabled] = useState<boolean>(false)
+  // Add a new state variable for continuous speech mode
+  const [continuousSpeech, setContinuousSpeech] = useState<boolean>(false)
+  // Add new state variables for voice options
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null)
+  // Add a new state variable to track which messages have been spoken
+  const [spokenMessageIds, setSpokenMessageIds] = useState<Set<string>>(new Set())
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const thinkingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const speechServiceRef = useRef<SpeechService | null>(null);
-  const speechRecognitionRef = useRef<SpeechRecognitionService | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const thinkingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const speechServiceRef = useRef<SpeechService | null>(null)
+  const speechRecognitionRef = useRef<SpeechRecognitionService | null>(null)
 
   // Initialize speech services
   useEffect(() => {
     try {
-      speechServiceRef.current = SpeechService.getInstance();
-      speechRecognitionRef.current = SpeechRecognitionService.getInstance();
-      setSpeechEnabled(true);
+      speechServiceRef.current = SpeechService.getInstance()
+      speechRecognitionRef.current = SpeechRecognitionService.getInstance()
+      setSpeechEnabled(true)
+
+      // Get available voices
+      if (speechServiceRef.current) {
+        const voices = speechServiceRef.current.getVoices()
+        setAvailableVoices(voices)
+        const preferredVoice = speechServiceRef.current.getPreferredVoice()
+        if (preferredVoice) {
+          setSelectedVoice(preferredVoice)
+        }
+      }
     } catch (error) {
-      console.error("Speech services not available:", error);
-      setSpeechEnabled(false);
+      console.error("Speech services not available:", error)
+      setSpeechEnabled(false)
     }
 
     return () => {
       if (speechServiceRef.current && speechServiceRef.current.isSpeaking()) {
-        speechServiceRef.current.stop();
+        speechServiceRef.current.stop()
       }
 
-      if (
-        speechRecognitionRef.current &&
-        speechRecognitionRef.current.isRecognizing()
-      ) {
-        speechRecognitionRef.current.stop();
+      if (speechRecognitionRef.current && speechRecognitionRef.current.isRecognizing()) {
+        speechRecognitionRef.current.stop()
       }
-    };
-  }, []);
+    }
+  }, [])
+
+  // Add a tooltip or small notification when continuous speech is first enabled
+  useEffect(() => {
+    if (continuousSpeech) {
+      // Show a temporary notification that auto-speak is enabled
+      const notification = document.createElement("div")
+      notification.className =
+        "fixed bottom-4 right-4 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-4 py-2 rounded-md shadow-md text-sm flex items-center z-50"
+      notification.innerHTML =
+        '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.728-2.728"></path></svg>Automatic voice mode enabled'
+      document.body.appendChild(notification)
+
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.style.opacity = "0"
+        notification.style.transition = "opacity 0.5s"
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification)
+          }
+        }, 500)
+      }, 3000)
+    }
+  }, [continuousSpeech])
 
   // Simulate network quality changes
   useEffect(() => {
@@ -111,15 +139,15 @@ export default function InterviewSimulator() {
       const interval = setInterval(() => {
         // Randomly change network quality for realism
         if (Math.random() < 0.1) {
-          setNetworkQuality((prev) => Math.max(1, prev - 1));
+          setNetworkQuality((prev) => Math.max(1, prev - 1))
         } else if (Math.random() < 0.1) {
-          setNetworkQuality((prev) => Math.min(3, prev + 1));
+          setNetworkQuality((prev) => Math.min(3, prev + 1))
         }
-      }, 10000);
+      }, 10000)
 
-      return () => clearInterval(interval);
+      return () => clearInterval(interval)
     }
-  }, [showVideoCall]);
+  }, [showVideoCall])
 
   const systemPrompt = `
     You are DevInterviewPro, an expert technical interviewer for software engineers.
@@ -150,17 +178,9 @@ export default function InterviewSimulator() {
     Maintain a professional but ${interviewerMood} demeanor throughout the interview.
     
     If the candidate is struggling, provide hints rather than immediate answers.
-  `;
+  `
 
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    reload,
-    error,
-  } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, reload, error } = useChat({
     initialMessages: [
       {
         id: "welcome",
@@ -168,203 +188,239 @@ export default function InterviewSimulator() {
         content: systemPrompt,
       },
     ],
-  });
+  })
 
   // Filter out system messages for display
-  const displayMessages = messages.filter(
-    (message) => message.role !== "system"
-  );
+  const displayMessages = messages.filter((message) => message.role !== "system")
 
   // Start/stop interview timer
   useEffect(() => {
     if (isTimerRunning) {
       timerRef.current = setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
-      }, 1000);
+        setElapsedTime((prev) => prev + 1)
+      }, 1000)
     } else if (timerRef.current) {
-      clearInterval(timerRef.current);
+      clearInterval(timerRef.current)
     }
 
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current);
+        clearInterval(timerRef.current)
       }
-    };
-  }, [isTimerRunning]);
+    }
+  }, [isTimerRunning])
 
   // Format elapsed time
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
 
   const handleRestart = () => {
-    reload();
-    setShowFeedback(false);
-    setInterviewStage("intro");
-    setInterviewStarted(false);
-    setElapsedTime(0);
-    setIsTimerRunning(false);
-    setShowCodeEditor(false);
-    setShowWhiteboard(false);
-    setShowNotes(false);
-    setIsThinking(false);
-    setShowVideoCall(false);
+    reload()
+    setShowFeedback(false)
+    setInterviewStage("intro")
+    setInterviewStarted(false)
+    setElapsedTime(0)
+    setIsTimerRunning(false)
+    setShowCodeEditor(false)
+    setShowWhiteboard(false)
+    setShowNotes(false)
+    setIsThinking(false)
+    setShowVideoCall(false)
+    setSpokenMessageIds(new Set()) // Reset spoken message IDs
     if (timerRef.current) {
-      clearInterval(timerRef.current);
+      clearInterval(timerRef.current)
     }
     if (thinkingTimerRef.current) {
-      clearInterval(thinkingTimerRef.current);
+      clearInterval(thinkingTimerRef.current)
     }
     if (speechServiceRef.current && speechServiceRef.current.isSpeaking()) {
-      speechServiceRef.current.stop();
+      speechServiceRef.current.stop()
     }
-  };
+  }
 
   const handleTopicsChange = (topics: string[]) => {
-    setSelectedTopics(topics);
-  };
+    setSelectedTopics(topics)
+  }
 
   const handleDifficultyChange = (level: string) => {
-    setDifficulty(level);
-  };
+    setDifficulty(level)
+  }
 
   const handleCompanyChange = (company: string) => {
-    setCompanyProfile(company);
-  };
+    setCompanyProfile(company)
+  }
 
   const handleInterviewerMoodChange = (mood: string) => {
-    setInterviewerMood(mood);
-  };
+    setInterviewerMood(mood)
+  }
 
   const handleStartInterview = () => {
-    setInterviewStarted(true);
-    setIsTimerRunning(true);
-    setActiveTab("interview");
-  };
+    setInterviewStarted(true)
+    setIsTimerRunning(true)
+    setActiveTab("interview")
+  }
 
   const handlePauseInterview = () => {
-    setIsTimerRunning((prev) => !prev);
-  };
+    setIsTimerRunning((prev) => !prev)
+  }
 
   const handleThinkingTime = () => {
-    setIsThinking(true);
+    setIsThinking(true)
     // Automatically stop thinking after 30 seconds
     thinkingTimerRef.current = setTimeout(() => {
-      setIsThinking(false);
-    }, 30000);
-  };
+      setIsThinking(false)
+    }, 30000)
+  }
 
   const handleStopThinking = () => {
-    setIsThinking(false);
+    setIsThinking(false)
     if (thinkingTimerRef.current) {
-      clearTimeout(thinkingTimerRef.current);
+      clearTimeout(thinkingTimerRef.current)
     }
-  };
+  }
 
   const handleToggleCodeEditor = () => {
-    setShowCodeEditor((prev) => !prev);
-    setShowWhiteboard(false);
-    setShowNotes(false);
-  };
+    setShowCodeEditor((prev) => !prev)
+    setShowWhiteboard(false)
+    setShowNotes(false)
+  }
 
   const handleToggleWhiteboard = () => {
-    setShowWhiteboard((prev) => !prev);
-    setShowCodeEditor(false);
-    setShowNotes(false);
-  };
+    setShowWhiteboard((prev) => !prev)
+    setShowCodeEditor(false)
+    setShowNotes(false)
+  }
 
   const handleToggleNotes = () => {
-    setShowNotes((prev) => !prev);
-    setShowCodeEditor(false);
-    setShowWhiteboard(false);
-  };
+    setShowNotes((prev) => !prev)
+    setShowCodeEditor(false)
+    setShowWhiteboard(false)
+  }
 
   const handleToggleAudio = () => {
-    setAudioEnabled((prev) => !prev);
-  };
+    setAudioEnabled((prev) => !prev)
+  }
 
   const handleToggleVideo = () => {
-    setVideoEnabled((prev) => !prev);
-  };
+    setVideoEnabled((prev) => !prev)
+  }
 
   const handleToggleVideoCall = () => {
-    setShowVideoCall((prev) => !prev);
-  };
+    setShowVideoCall((prev) => !prev)
+  }
 
   const handleNextStage = () => {
-    const stages = [
-      "intro",
-      "technical",
-      "coding",
-      "system-design",
-      "behavioral",
-      "wrap-up",
-    ];
-    const currentIndex = stages.indexOf(interviewStage);
+    const stages = ["intro", "technical", "coding", "system-design", "behavioral", "wrap-up"]
+    const currentIndex = stages.indexOf(interviewStage)
     if (currentIndex < stages.length - 1) {
-      setInterviewStage(stages[currentIndex + 1]);
+      setInterviewStage(stages[currentIndex + 1])
     }
-  };
+  }
 
-  // Text-to-speech for interviewer messages
-  const speakMessage = (message: string) => {
-    if (!speechServiceRef.current || !speechEnabled) return;
+  // Modify the speakMessage function to handle different message types
+  const speakMessage = (message: string, isNewMessage = false, messageId?: string) => {
+    if (!speechServiceRef.current || !speechEnabled) return
 
-    setIsSpeaking(true);
+    setIsSpeaking(true)
 
-    speechServiceRef.current.speak(message, {
-      rate: 1,
-      pitch: 1,
+    // Remove any markdown formatting or code blocks that might interfere with speech
+    const cleanMessage = message
+      .replace(/```[\s\S]*?```/g, "code block omitted")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/\[([^\]]+)\]$$[^)]+$$/g, "$1")
+
+    speechServiceRef.current.speak(cleanMessage, {
+      rate: 0.9,
+      pitch: 1.1,
+      voice: selectedVoice || undefined,
       onEnd: () => {
-        setIsSpeaking(false);
+        setIsSpeaking(false)
       },
       onError: () => {
-        setIsSpeaking(false);
+        setIsSpeaking(false)
       },
-    });
-  };
+    })
+
+    // If a messageId is provided, mark it as spoken
+    if (messageId) {
+      setSpokenMessageIds((prev) => new Set([...prev, messageId]))
+    }
+  }
+
+  // Add a function to toggle continuous speech mode
+  const toggleContinuousSpeech = () => {
+    const newMode = !continuousSpeech
+    setContinuousSpeech(newMode)
+
+    // If turning on continuous speech, speak the last message immediately if it hasn't been spoken
+    if (newMode) {
+      const lastMessage = displayMessages.findLast((m) => m.role === "assistant")
+      if (lastMessage && !isSpeaking && !spokenMessageIds.has(lastMessage.id)) {
+        speakMessage(lastMessage.content)
+        // Mark this message as spoken
+        setSpokenMessageIds((prev) => new Set([...prev, lastMessage.id]))
+      }
+    } else {
+      // If turning off continuous mode, stop any ongoing speech
+      stopSpeaking()
+    }
+  }
+
+  // Add an effect to automatically speak new messages when they arrive in continuous mode
+  useEffect(() => {
+    // Check if a new message has arrived and it's from the interviewer (assistant)
+    if (displayMessages.length > 0 && !isLoading && continuousSpeech) {
+      const lastMessage = displayMessages[displayMessages.length - 1]
+      if (lastMessage.role === "assistant" && !spokenMessageIds.has(lastMessage.id)) {
+        // Wait a short moment before speaking to ensure UI has updated
+        setTimeout(() => {
+          if (!isSpeaking) {
+            speakMessage(lastMessage.content, true)
+            // Mark this message as spoken
+            setSpokenMessageIds((prev) => new Set([...prev, lastMessage.id]))
+          }
+        }, 300)
+      }
+    }
+  }, [displayMessages, continuousSpeech, isLoading, isSpeaking, spokenMessageIds])
 
   // Stop speaking
   const stopSpeaking = () => {
     if (speechServiceRef.current && speechServiceRef.current.isSpeaking()) {
-      speechServiceRef.current.stop();
-      setIsSpeaking(false);
+      speechServiceRef.current.stop()
+      setIsSpeaking(false)
     }
-  };
+  }
 
   // Start speech recognition
   const startListening = () => {
-    if (!speechRecognitionRef.current || !speechEnabled) return;
+    if (!speechRecognitionRef.current || !speechEnabled) return
 
-    setIsListening(true);
+    setIsListening(true)
 
     speechRecognitionRef.current.start(
       (transcript) => {
         // Update input field with transcript
-        handleInputChange({
-          target: { value: transcript },
-        } as React.ChangeEvent<HTMLTextAreaElement>);
+        handleInputChange({ target: { value: transcript } } as React.ChangeEvent<HTMLTextAreaElement>)
       },
       () => {
-        setIsListening(false);
-      }
-    );
-  };
+        setIsListening(false)
+      },
+    )
+  }
 
   // Stop speech recognition
   const stopListening = () => {
-    if (
-      speechRecognitionRef.current &&
-      speechRecognitionRef.current.isRecognizing()
-    ) {
-      speechRecognitionRef.current.stop();
-      setIsListening(false);
+    if (speechRecognitionRef.current && speechRecognitionRef.current.isRecognizing()) {
+      speechRecognitionRef.current.stop()
+      setIsListening(false)
     }
-  };
+  }
 
   // Get interviewer details based on company profile
   const getInterviewerDetails = () => {
@@ -375,32 +431,32 @@ export default function InterviewSimulator() {
           role: "Senior Developer & Co-founder",
           company: "InnovateTech",
           avatar: "https://placehold.co/200x200",
-        };
+        }
       case "enterprise":
         return {
           name: "Sarah Johnson",
           role: "Engineering Manager",
           company: "Enterprise Solutions Inc.",
           avatar: "https://placehold.co/200x200",
-        };
+        }
       case "faang":
         return {
           name: "Michael Rodriguez",
           role: "Principal Engineer",
           company: "TechGiant",
           avatar: "https://placehold.co/200x200",
-        };
+        }
       default:
         return {
           name: "Alex Chen",
           role: "Senior Developer",
           company: "InnovateTech",
           avatar: "https://placehold.co/200x200",
-        };
+        }
     }
-  };
+  }
 
-  const interviewer = getInterviewerDetails();
+  const interviewer = getInterviewerDetails()
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -421,12 +477,9 @@ export default function InterviewSimulator() {
                   <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
                     <h3 className="font-medium mb-2">Interview Overview</h3>
                     <ul className="list-disc pl-5 space-y-1 text-sm">
+                      <li>This interview will cover: {selectedTopics.join(", ")}</li>
                       <li>
-                        This interview will cover: {selectedTopics.join(", ")}
-                      </li>
-                      <li>
-                        Difficulty level:{" "}
-                        <span className="capitalize">{difficulty}</span>
+                        Difficulty level: <span className="capitalize">{difficulty}</span>
                       </li>
                       <li>Expected duration: 20-30 minutes</li>
                       <li>
@@ -434,8 +487,8 @@ export default function InterviewSimulator() {
                         {companyProfile === "tech-startup"
                           ? "Tech Startup"
                           : companyProfile === "enterprise"
-                          ? "Enterprise Company"
-                          : "FAANG-level Company"}
+                            ? "Enterprise Company"
+                            : "FAANG-level Company"}
                       </li>
                     </ul>
                   </div>
@@ -473,10 +526,7 @@ export default function InterviewSimulator() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm">
                   <div className="flex items-center space-x-2">
-                    <Badge
-                      variant={isTimerRunning ? "default" : "outline"}
-                      className="flex items-center"
-                    >
+                    <Badge variant={isTimerRunning ? "default" : "outline"} className="flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
                       {formatTime(elapsedTime)}
                     </Badge>
@@ -485,15 +535,24 @@ export default function InterviewSimulator() {
                       {interviewStage === "intro"
                         ? "Introduction"
                         : interviewStage === "technical"
-                        ? "Technical"
-                        : interviewStage === "coding"
-                        ? "Coding"
-                        : interviewStage === "system-design"
-                        ? "System Design"
-                        : interviewStage === "behavioral"
-                        ? "Behavioral"
-                        : "Wrap-up"}
+                          ? "Technical"
+                          : interviewStage === "coding"
+                            ? "Coding"
+                            : interviewStage === "system-design"
+                              ? "System Design"
+                              : interviewStage === "behavioral"
+                                ? "Behavioral"
+                                : "Wrap-up"}
                     </Badge>
+                    {continuousSpeech && (
+                      <Badge
+                        variant="outline"
+                        className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
+                      >
+                        <Volume2 className="h-3 w-3 mr-1" />
+                        Voice Active
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -502,11 +561,7 @@ export default function InterviewSimulator() {
                       onClick={handleToggleAudio}
                       className={!audioEnabled ? "text-slate-400" : ""}
                     >
-                      {audioEnabled ? (
-                        <Mic className="h-4 w-4" />
-                      ) : (
-                        <MicOff className="h-4 w-4" />
-                      )}
+                      {audioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
                     </Button>
                     <Button
                       variant="outline"
@@ -514,32 +569,18 @@ export default function InterviewSimulator() {
                       onClick={handleToggleVideo}
                       className={!videoEnabled ? "text-slate-400" : ""}
                     >
-                      {videoEnabled ? (
-                        <Video className="h-4 w-4" />
-                      ) : (
-                        <VideoOff className="h-4 w-4" />
-                      )}
+                      {videoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleToggleVideoCall}
-                      className={
-                        showVideoCall ? "bg-slate-100 dark:bg-slate-700" : ""
-                      }
+                      className={showVideoCall ? "bg-slate-100 dark:bg-slate-700" : ""}
                     >
                       <MessageSquare className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePauseInterview}
-                    >
-                      {isTimerRunning ? (
-                        <Pause className="h-4 w-4" />
-                      ) : (
-                        <Play className="h-4 w-4" />
-                      )}
+                    <Button variant="outline" size="sm" onClick={handlePauseInterview}>
+                      {isTimerRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleRestart}>
                       <RefreshCw className="h-4 w-4" />
@@ -576,30 +617,32 @@ export default function InterviewSimulator() {
                             <div className="flex space-x-2">
                               {speechEnabled && (
                                 <Button
-                                  variant="outline"
+                                  variant={continuousSpeech ? "default" : "outline"}
                                   size="sm"
-                                  onClick={
-                                    isSpeaking
-                                      ? stopSpeaking
-                                      : () => {
-                                          const lastMessage =
-                                            displayMessages.findLast(
-                                              (m) => m.role === "assistant"
-                                            );
-                                          if (lastMessage)
-                                            speakMessage(lastMessage.content);
-                                        }
-                                  }
+                                  onClick={isSpeaking ? stopSpeaking : toggleContinuousSpeech}
                                   className={
                                     isSpeaking
-                                      ? "bg-slate-100 dark:bg-slate-700"
-                                      : ""
+                                      ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                                      : continuousSpeech
+                                        ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                                        : ""
                                   }
                                 >
                                   {isSpeaking ? (
-                                    <VolumeX className="h-4 w-4" />
+                                    <>
+                                      <VolumeX className="h-4 w-4 mr-1" />
+                                      Stop
+                                    </>
+                                  ) : continuousSpeech ? (
+                                    <>
+                                      <Volume2 className="h-4 w-4 mr-1" />
+                                      Voice On
+                                    </>
                                   ) : (
-                                    <Volume2 className="h-4 w-4" />
+                                    <>
+                                      <Volume2 className="h-4 w-4 mr-1" />
+                                      Voice
+                                    </>
                                   )}
                                 </Button>
                               )}
@@ -607,11 +650,7 @@ export default function InterviewSimulator() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleToggleCodeEditor}
-                                className={
-                                  showCodeEditor
-                                    ? "bg-slate-100 dark:bg-slate-700"
-                                    : ""
-                                }
+                                className={showCodeEditor ? "bg-slate-100 dark:bg-slate-700" : ""}
                               >
                                 <PenTool className="h-4 w-4" />
                               </Button>
@@ -619,11 +658,7 @@ export default function InterviewSimulator() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleToggleWhiteboard}
-                                className={
-                                  showWhiteboard
-                                    ? "bg-slate-100 dark:bg-slate-700"
-                                    : ""
-                                }
+                                className={showWhiteboard ? "bg-slate-100 dark:bg-slate-700" : ""}
                               >
                                 <Layers className="h-4 w-4" />
                               </Button>
@@ -631,19 +666,11 @@ export default function InterviewSimulator() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleToggleNotes}
-                                className={
-                                  showNotes
-                                    ? "bg-slate-100 dark:bg-slate-700"
-                                    : ""
-                                }
+                                className={showNotes ? "bg-slate-100 dark:bg-slate-700" : ""}
                               >
                                 <StickyNote className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleNextStage}
-                              >
+                              <Button variant="outline" size="sm" onClick={handleNextStage}>
                                 <SkipForward className="h-4 w-4" />
                               </Button>
                             </div>
@@ -667,17 +694,12 @@ export default function InterviewSimulator() {
                                     Thinking Time (30s)
                                   </span>
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={handleStopThinking}
-                                >
+                                <Button size="sm" variant="outline" onClick={handleStopThinking}>
                                   Done Thinking
                                 </Button>
                               </div>
                               <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
-                                Take your time to think about your answer. The
-                                interviewer is waiting.
+                                Take your time to think about your answer. The interviewer is waiting.
                               </p>
                             </div>
                           )}
@@ -695,18 +717,10 @@ export default function InterviewSimulator() {
                                 {displayMessages.map((message) => (
                                   <div
                                     key={message.id}
-                                    className={`flex ${
-                                      message.role === "user"
-                                        ? "justify-end"
-                                        : "justify-start"
-                                    }`}
+                                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                                   >
                                     <div
-                                      className={`flex gap-3 max-w-[80%] ${
-                                        message.role === "user"
-                                          ? "flex-row-reverse"
-                                          : ""
-                                      }`}
+                                      className={`flex gap-3 max-w-[80%] ${message.role === "user" ? "flex-row-reverse" : ""}`}
                                     >
                                       <Avatar className="h-8 w-8">
                                         {message.role === "user" ? (
@@ -716,34 +730,26 @@ export default function InterviewSimulator() {
                                           </>
                                         ) : (
                                           <>
-                                            <AvatarImage
-                                              src={interviewer.avatar}
-                                            />
+                                            <AvatarImage src={interviewer.avatar} />
                                             <AvatarFallback>AI</AvatarFallback>
                                           </>
                                         )}
                                       </Avatar>
                                       <div
                                         className={`rounded-lg px-4 py-2 ${
-                                          message.role === "user"
-                                            ? "bg-primary text-primary-foreground"
-                                            : "bg-muted"
+                                          message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                                         }`}
                                       >
-                                        <div className="whitespace-pre-wrap">
-                                          {message.content}
-                                        </div>
-                                        {message.role === "assistant" && (
+                                        <div className="whitespace-pre-wrap">{message.content}</div>
+                                        {message.role === "assistant" && !continuousSpeech && (
                                           <Button
                                             variant="ghost"
                                             size="sm"
                                             className="h-6 mt-1 text-xs opacity-70 hover:opacity-100"
-                                            onClick={() =>
-                                              speakMessage(message.content)
-                                            }
-                                            disabled={
-                                              !speechEnabled || isSpeaking
-                                            }
+                                            onClick={() => {
+                                              speakMessage(message.content, false, message.id)
+                                            }}
+                                            disabled={!speechEnabled || isSpeaking}
                                           >
                                             <Volume2 className="h-3 w-3 mr-1" />
                                             Listen
@@ -794,10 +800,7 @@ export default function InterviewSimulator() {
                         )}
 
                         <CardFooter>
-                          <form
-                            onSubmit={handleSubmit}
-                            className="w-full space-y-3"
-                          >
+                          <form onSubmit={handleSubmit} className="w-full space-y-3">
                             <div className="flex justify-between items-center mb-2">
                               <Button
                                 type="button"
@@ -815,9 +818,7 @@ export default function InterviewSimulator() {
                                   type="button"
                                   variant="outline"
                                   size="sm"
-                                  onClick={
-                                    isListening ? stopListening : startListening
-                                  }
+                                  onClick={isListening ? stopListening : startListening}
                                   className={
                                     isListening
                                       ? "bg-green-100 dark:bg-green-900/20 border-green-300 dark:border-green-800"
@@ -844,8 +845,8 @@ export default function InterviewSimulator() {
                                 isThinking
                                   ? "Taking time to think..."
                                   : isListening
-                                  ? "Listening to your answer..."
-                                  : "Type your answer here..."
+                                    ? "Listening to your answer..."
+                                    : "Type your answer here..."
                               }
                               value={input}
                               onChange={handleInputChange}
@@ -853,15 +854,7 @@ export default function InterviewSimulator() {
                               disabled={isThinking || isListening}
                             />
                             <div className="flex justify-end">
-                              <Button
-                                type="submit"
-                                disabled={
-                                  isLoading ||
-                                  !input.trim() ||
-                                  isThinking ||
-                                  isListening
-                                }
-                              >
+                              <Button type="submit" disabled={isLoading || !input.trim() || isThinking || isListening}>
                                 <Send className="h-4 w-4 mr-2" />
                                 Send Answer
                               </Button>
@@ -885,18 +878,16 @@ export default function InterviewSimulator() {
                 <div>
                   <h3 className="text-sm font-medium mb-2">Difficulty Level</h3>
                   <div className="flex flex-wrap gap-2">
-                    {["beginner", "intermediate", "advanced", "expert"].map(
-                      (level) => (
-                        <Badge
-                          key={level}
-                          variant={difficulty === level ? "default" : "outline"}
-                          className="cursor-pointer capitalize"
-                          onClick={() => handleDifficultyChange(level)}
-                        >
-                          {level}
-                        </Badge>
-                      )
-                    )}
+                    {["beginner", "intermediate", "advanced", "expert"].map((level) => (
+                      <Badge
+                        key={level}
+                        variant={difficulty === level ? "default" : "outline"}
+                        className="cursor-pointer capitalize"
+                        onClick={() => handleDifficultyChange(level)}
+                      >
+                        {level}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
 
@@ -912,9 +903,7 @@ export default function InterviewSimulator() {
                     ].map((company) => (
                       <Badge
                         key={company.id}
-                        variant={
-                          companyProfile === company.id ? "default" : "outline"
-                        }
+                        variant={companyProfile === company.id ? "default" : "outline"}
                         className="cursor-pointer"
                         onClick={() => handleCompanyChange(company.id)}
                       >
@@ -927,9 +916,7 @@ export default function InterviewSimulator() {
                 <Separator />
 
                 <div>
-                  <h3 className="text-sm font-medium mb-2">
-                    Interviewer Style
-                  </h3>
+                  <h3 className="text-sm font-medium mb-2">Interviewer Style</h3>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: "friendly", label: "Friendly" },
@@ -938,9 +925,7 @@ export default function InterviewSimulator() {
                     ].map((mood) => (
                       <Badge
                         key={mood.id}
-                        variant={
-                          interviewerMood === mood.id ? "default" : "outline"
-                        }
+                        variant={interviewerMood === mood.id ? "default" : "outline"}
                         className="cursor-pointer"
                         onClick={() => handleInterviewerMoodChange(mood.id)}
                       >
@@ -954,7 +939,7 @@ export default function InterviewSimulator() {
 
                 <div>
                   <h3 className="text-sm font-medium mb-2">Speech Settings</h3>
-                  <div className="flex flex-col space-y-2">
+                  <div className="flex flex-col space-y-4">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -968,20 +953,95 @@ export default function InterviewSimulator() {
                         Enable text-to-speech for interviewer
                       </label>
                     </div>
+
+                    {speechEnabled && (
+                      <div className="space-y-2">
+                        <label className="text-sm block">Interviewer Voice</label>
+                        <select
+                          className="w-full p-2 border rounded-md bg-background"
+                          onChange={(e) => {
+                            const selectedVoiceURI = e.target.value
+                            const voice = availableVoices.find((v) => v.voiceURI === selectedVoiceURI) || null
+                            setSelectedVoice(voice)
+                            if (voice && speechServiceRef.current) {
+                              speechServiceRef.current.setPreferredVoice(voice)
+                            }
+                          }}
+                          value={selectedVoice?.voiceURI || ""}
+                        >
+                          <option value="">Default Voice</option>
+                          <optgroup label="British English">
+                            {availableVoices
+                              .filter((voice) => voice.lang.includes("en-GB"))
+                              .map((voice) => (
+                                <option key={voice.voiceURI} value={voice.voiceURI}>
+                                  {voice.name}
+                                </option>
+                              ))}
+                          </optgroup>
+                          <optgroup label="Other English">
+                            {availableVoices
+                              .filter((voice) => voice.lang.includes("en") && !voice.lang.includes("en-GB"))
+                              .map((voice) => (
+                                <option key={voice.voiceURI} value={voice.voiceURI}>
+                                  {voice.name}
+                                </option>
+                              ))}
+                          </optgroup>
+                          <optgroup label="Other Languages">
+                            {availableVoices
+                              .filter((voice) => !voice.lang.includes("en"))
+                              .map((voice) => (
+                                <option key={voice.voiceURI} value={voice.voiceURI}>
+                                  {voice.name} ({voice.lang})
+                                </option>
+                              ))}
+                          </optgroup>
+                        </select>
+
+                        <div className="flex items-center mt-2">
+                          <input
+                            type="checkbox"
+                            id="enable-continuous"
+                            className="mr-2"
+                            checked={continuousSpeech}
+                            onChange={toggleContinuousSpeech}
+                          />
+                          <label htmlFor="enable-continuous" className="text-sm">
+                            Enable continuous speech (auto-speak responses)
+                          </label>
+                        </div>
+
+                        <div className="mt-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (speechServiceRef.current) {
+                                speechServiceRef.current.speak(
+                                  "Hello! I'm your interviewer today. This is a test of my voice settings.",
+                                  {
+                                    voice: selectedVoice || undefined,
+                                  },
+                                )
+                              }
+                            }}
+                          >
+                            Test Voice
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     {!window.speechSynthesis && (
-                      <p className="text-xs text-red-500">
-                        Your browser doesn't support speech synthesis.
-                      </p>
+                      <p className="text-xs text-red-500">Your browser doesn't support speech synthesis.</p>
                     )}
                   </div>
                 </div>
 
                 <Separator />
 
-                <TopicSelector
-                  selectedTopics={selectedTopics}
-                  onTopicsChange={handleTopicsChange}
-                />
+                <TopicSelector selectedTopics={selectedTopics} onTopicsChange={handleTopicsChange} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -989,12 +1049,9 @@ export default function InterviewSimulator() {
       </div>
 
       <div className="lg:col-span-1">
-        <FeedbackPanel
-          messages={displayMessages}
-          showFeedback={showFeedback}
-          setShowFeedback={setShowFeedback}
-        />
+        <FeedbackPanel messages={displayMessages} showFeedback={showFeedback} setShowFeedback={setShowFeedback} />
       </div>
     </div>
-  );
+  )
 }
+
