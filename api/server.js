@@ -8,12 +8,21 @@ dotenv.config({path: '../.env'});
 
 const app = express();
 
-// Enable CORS for your React app
+// Updated CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
-  methods: ["GET", "POST"],
+  origin: [
+    'https://interview-clr3scyfz-agri-connect.vercel.app',
+    'https://devinterviewpro.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+// Enable pre-flight requests for all routes
+app.options('*', cors());
 
 app.use(express.json());
 

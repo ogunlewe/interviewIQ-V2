@@ -5,8 +5,10 @@ import { useState } from "react";
 import { generateUniqueId } from "./utils";
 
 // API URL - can be configured based on environment
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3001/api/chat";
+const API_URL = import.meta.env.VITE_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://devinterviewpro.vercel.app/api/chat'
+    : 'http://localhost:3001/api/chat');
 
 export interface Message {
   id: string;
@@ -28,16 +30,19 @@ export async function sendMessage(
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
+      credentials: 'include', // Add this for CORS
       body: JSON.stringify({ messages }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text(); // Get the raw response text
-      console.error('Server response:', response.status, errorText); // Debug log
-      const errorData = JSON.parse(errorText);
-      throw new Error(
-        errorData.error || `Server error: ${response.status}`
-      );
+      const errorText = await response.text();
+      console.error('Server response:', response.status, errorText);
+      try {
+        const errorData = JSON.parse(errorText);
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      } catch (e) {
+        throw new Error(`Server error: ${response.status}`);
+      }
     }
 
     return await response.json();
