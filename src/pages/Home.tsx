@@ -21,7 +21,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-screen">
           <div className="max-w-3xl w-full text-center space-y-6">
             <h1 className="text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4">
-              DevInterviewPro
+              interviewIQ
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-8">
               Your AI-powered interview assistant for software engineering
@@ -75,7 +75,7 @@ export default function Home() {
           <header className="mb-8">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                DevInterviewPro
+                interviewIQ
               </h1>
               <Button variant="outline" onClick={() => setShowIntro(true)}>
                 Back to Home
