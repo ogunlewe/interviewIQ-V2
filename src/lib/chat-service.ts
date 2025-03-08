@@ -6,7 +6,7 @@ import { generateUniqueId } from "./utils";
 
 // API URL - can be configured based on environment
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3001/api/chat";
+  import.meta.env.VITE_API_URL || "http://localhost:3001/chat";
 
 export interface Message {
   id: string;

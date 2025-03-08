@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Load environment variables
-dotenv.config();
+dotenv.config({path: '../.env'});
 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(express.json());
 // Initialize the Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.post("/api/chat", async (req, res) => {
+app.post("/chat", async (req, res) => {
   try {
     const { messages } = req.body;
 
