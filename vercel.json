@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
       {
-        "src": "api/chat.js",
+        "src": "api/server.js",
         "use": "@vercel/node"
       },
       {
@@ -12,7 +12,7 @@
       }
     ],
     "routes": [
-      { "src": "/api/(.*)", "dest": "api/chat.js" },
+      { "src": "/api/(.*)", "dest": "api/server.js" },
       { "src": "/(.*)", "dest": "/src/$1" }
     ]
   }
