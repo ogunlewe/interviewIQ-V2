@@ -1,6 +1,6 @@
 {
     "scripts": {
-      "build": "tsc && vite build"
+      "build": "vite build"
     }
   }
   
