@@ -9,13 +9,11 @@ dotenv.config();
 const app = express();
 
 // Enable CORS for your React app
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Default Vite dev server port
-    methods: ["GET", "POST"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "*",
+  methods: ["GET", "POST"],
+  credentials: true
+}));
 
 app.use(express.json());
 
