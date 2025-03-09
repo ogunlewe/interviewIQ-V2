@@ -85,6 +85,11 @@ export default function InterviewSimulator() {
   const [elevenLabsVoiceId, setElevenLabsVoiceId] = useState<string>("")
   const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ id: string; name: string }>>([])
 
+  // Add new state variables for speech pause duration and silence timer
+  const [speechPauseDuration, setSpeechPauseDuration] = useState(1500); // 1.5 seconds of silence before sending
+  const silenceTimer = useRef<NodeJS.Timeout | null>(null)
+  const [isSpeechProcessing, setIsSpeechProcessing] = useState(false)
+
   // Initialize speech services
   useEffect(() => {
     try {
@@ -411,6 +416,42 @@ export default function InterviewSimulator() {
       setIsSpeaking(false)
     }
   }
+
+  // Update the speech recognition logic
+  useEffect(() => {
+    const handleSpeechResult = (transcript: string) => {
+      setInput(transcript);
+      
+      // Reset the silence timer when we receive new speech
+      if (silenceTimer.current) {
+        clearTimeout(silenceTimer.current);
+      }
+      
+      // Start a new silence timer
+      silenceTimer.current = setTimeout(() => {
+        if (isListening && transcript.trim().length > 0) {
+          setIsSpeechProcessing(true);
+          stopListening();
+          
+          // Small delay to show "Processing..." status
+          setTimeout(() => {
+            handleSubmit(new Event('submit') as React.FormEvent<HTMLFormElement>);
+            setIsSpeechProcessing(false);
+          }, 500);
+        }
+      }, speechPauseDuration);
+    };
+
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.onResult = handleSpeechResult;
+    }
+
+    return () => {
+      if (silenceTimer.current) {
+        clearTimeout(silenceTimer.current);
+      }
+    };
+  }, [isListening, speechRecognitionRef.current, handleSubmit]);
 
   // Start speech recognition
   const startListening = () => {
@@ -894,13 +935,20 @@ export default function InterviewSimulator() {
                                   className={
                                     isListening
                                       ? "bg-green-100 dark:bg-green-900/20 border-green-300 dark:border-green-800"
-                                      : ""
+                                      : isSpeechProcessing
+                                        ? "bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-800"
+                                        : ""
                                   }
                                 >
                                   {isListening ? (
                                     <>
                                       <Mic className="h-4 w-4 mr-2 text-green-600 dark:text-green-400 animate-pulse" />
-                                      Recording...
+                                      Listening...
+                                    </>
+                                  ) : isSpeechProcessing ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 text-blue-600 dark:text-blue-400 animate-spin" />
+                                      Processing...
                                     </>
                                   ) : (
                                     <>
@@ -918,15 +966,17 @@ export default function InterviewSimulator() {
                                   ? "Taking time to think..."
                                   : isListening
                                     ? "Listening to your answer..."
-                                    : "Type your answer here..."
+                                    : isSpeechProcessing
+                                      ? "Processing your speech..."
+                                      : "Type your answer here..."
                               }
                               value={input}
                               onChange={handleInputChange}
                               className="min-h-[80px]"
-                              disabled={isThinking || isListening}
+                              disabled={isThinking || isListening || isSpeechProcessing}
                             />
                             <div className="flex justify-end">
-                              <Button type="submit" disabled={isLoading || !input.trim() || isThinking || isListening}>
+                              <Button type="submit" disabled={isLoading || !input.trim() || isThinking || isListening || isSpeechProcessing}>
                                 <Send className="h-4 w-4 mr-2" />
                                 Send Answer
                               </Button>
