@@ -153,29 +153,24 @@ export default function FeedbackPanel({
   };
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800 h-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <BarChart className="h-5 w-5 mr-2" />
-            <span>Interview Feedback</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowFeedback(!showFeedback)}
-          >
-            {showFeedback ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronUp className="h-4 w-4" />
-            )}
-          </Button>
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm">
+      <CardHeader className="pb-2 pt-4 px-4 flex justify-between items-center">
+        <CardTitle className="text-base font-medium flex items-center gap-2">
+          <BarChart className="h-4 w-4 text-slate-500" />
+          Interview Feedback
         </CardTitle>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => setShowFeedback(!showFeedback)}
+        >
+          {showFeedback ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
       </CardHeader>
-
+      
       {showFeedback ? (
-        <CardContent>
+        <CardContent className="px-4 pt-0 pb-4">
           {messages.length < 4 ? (
             <div className="text-center py-8 text-slate-500 dark:text-slate-400">
               <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -209,88 +204,69 @@ export default function FeedbackPanel({
                 onValueChange={setFeedbackTab}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="summary">Summary</TabsTrigger>
-                  <TabsTrigger value="topics">Topics</TabsTrigger>
-                  <TabsTrigger value="detailed">Detailed</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 h-9 mb-4">
+                  <TabsTrigger value="summary" className="text-xs">Summary</TabsTrigger>
+                  <TabsTrigger value="topics" className="text-xs">Topics</TabsTrigger>
+                  <TabsTrigger value="detailed" className="text-xs">Detailed Feedback</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="summary" className="mt-4 space-y-4">
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
-                      <div className="text-xs text-slate-500 mb-1">
-                        Technical
+                <TabsContent value="summary">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 rounded text-center">
+                        <div className="text-xs text-slate-500 mb-1">Technical</div>
+                        <div className="text-lg font-medium">{feedbackData.technicalScore.toFixed(1)}</div>
+                        <Progress value={feedbackData.technicalScore * 20} className="h-1 mt-1" />
                       </div>
-                      <div className="text-lg font-semibold">
-                        {feedbackData.technicalScore.toFixed(1)}
+                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 rounded text-center">
+                        <div className="text-xs text-slate-500 mb-1">Communication</div>
+                        <div className="text-lg font-medium">{feedbackData.communicationScore.toFixed(1)}</div>
+                        <Progress value={feedbackData.communicationScore * 20} className="h-1 mt-1" />
                       </div>
-                      <Progress
-                        value={feedbackData.technicalScore * 20}
-                        className="h-1 mt-1"
-                      />
+                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 rounded text-center">
+                        <div className="text-xs text-slate-500 mb-1">Problem Solving</div>
+                        <div className="text-lg font-medium">{feedbackData.problemSolvingScore.toFixed(1)}</div>
+                        <Progress value={feedbackData.problemSolvingScore * 20} className="h-1 mt-1" />
+                      </div>
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
-                      <div className="text-xs text-slate-500 mb-1">
-                        Communication
-                      </div>
-                      <div className="text-lg font-semibold">
-                        {feedbackData.communicationScore.toFixed(1)}
-                      </div>
-                      <Progress
-                        value={feedbackData.communicationScore * 20}
-                        className="h-1 mt-1"
-                      />
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-center">
-                      <div className="text-xs text-slate-500 mb-1">
-                        Problem Solving
-                      </div>
-                      <div className="text-lg font-semibold">
-                        {feedbackData.problemSolvingScore.toFixed(1)}
-                      </div>
-                      <Progress
-                        value={feedbackData.problemSolvingScore * 20}
-                        className="h-1 mt-1"
-                      />
-                    </div>
-                  </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium flex items-center mb-2">
-                      <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                      Strengths
-                    </h3>
-                    <ScrollArea className="h-[120px]">
-                      <ul className="space-y-2 text-sm">
-                        {feedbackData.strengths.map((strength, i) => (
-                          <li key={i} className="flex items-start">
-                            <span className="text-green-500 mr-2">•</span>
-                            <span>{strength}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </ScrollArea>
-                  </div>
+                    <div>
+                      <h3 className="text-sm font-medium flex items-center mb-2">
+                        <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                        Strengths
+                      </h3>
+                      <ScrollArea className="h-[120px]">
+                        <ul className="space-y-2 text-sm">
+                          {feedbackData.strengths.map((strength, i) => (
+                            <li key={i} className="flex items-start">
+                              <span className="text-green-500 mr-2">•</span>
+                              <span>{strength}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </ScrollArea>
+                    </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium flex items-center mb-2">
-                      <XCircle className="h-4 w-4 mr-1 text-amber-500" />
-                      Areas for Improvement
-                    </h3>
-                    <ScrollArea className="h-[120px]">
-                      <ul className="space-y-2 text-sm">
-                        {feedbackData.improvements.map((improvement, i) => (
-                          <li key={i} className="flex items-start">
-                            <span className="text-amber-500 mr-2">•</span>
-                            <span>{improvement}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </ScrollArea>
+                    <div>
+                      <h3 className="text-sm font-medium flex items-center mb-2">
+                        <XCircle className="h-4 w-4 mr-1 text-amber-500" />
+                        Areas for Improvement
+                      </h3>
+                      <ScrollArea className="h-[120px]">
+                        <ul className="space-y-2 text-sm">
+                          {feedbackData.improvements.map((improvement, i) => (
+                            <li key={i} className="flex items-start">
+                              <span className="text-amber-500 mr-2">•</span>
+                              <span>{improvement}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </ScrollArea>
+                    </div>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="topics" className="mt-4">
+                <TabsContent value="topics">
                   <ScrollArea className="h-[280px]">
                     <div className="space-y-4">
                       {Object.entries(feedbackData.topicScores).map(
@@ -319,17 +295,17 @@ export default function FeedbackPanel({
                   </ScrollArea>
                 </TabsContent>
 
-                <TabsContent value="detailed" className="mt-4">
+                <TabsContent value="detailed">
                   <ScrollArea className="h-[280px]">
                     <div className="space-y-4">
                       {feedbackData.detailedFeedback.map((item, index) => (
-                        <div key={index} className="border rounded-md p-3">
+                        <div key={index} className="border rounded-md p-2 sm:p-3">
                           <div className="flex justify-between items-start mb-2">
-                            <div className="font-medium text-sm">
+                            <div className="font-medium text-xs sm:text-sm">
                               {item.category}
                             </div>
                             <div className="flex items-center">
-                              <span className="text-sm mr-1">
+                              <span className="text-xs sm:text-sm mr-1">
                                 {item.score.toFixed(1)}
                               </span>
                               {item.score >= 4 ? (
@@ -379,8 +355,8 @@ export default function FeedbackPanel({
           )}
         </CardContent>
       ) : (
-        <CardContent>
-          <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
+        <CardContent className="py-2 px-4">
+          <div className="text-center py-2 text-slate-500 dark:text-slate-400 text-xs">
             Click to view feedback
           </div>
         </CardContent>

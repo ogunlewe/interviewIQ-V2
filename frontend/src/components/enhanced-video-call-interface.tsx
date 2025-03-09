@@ -319,7 +319,7 @@ export default function EnhancedVideoCallInterface({
 
   return (
     <div className="flex flex-col space-y-4">
-      <div className="relative w-full h-[400px] bg-black rounded-lg overflow-hidden">
+      <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] bg-black rounded-lg overflow-hidden">
         {/* Main video (interviewer) */}
         <div className="absolute inset-0 flex items-center justify-center">
           {videoEnabled ? (
@@ -401,70 +401,70 @@ export default function EnhancedVideoCallInterface({
 
         {/* Call controls */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 sm:p-4 transition-opacity duration-300 ${
             showControls ? "opacity-100" : "opacity-0"
           }`}
         >
-          <div className="flex items-center justify-center space-x-4">
+          <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4">
             <Button
               variant="outline"
               size="icon"
-              className={`rounded-full ${audioEnabled ? "bg-gray-700" : "bg-red-600"} border-none text-white hover:bg-gray-600`}
+              className={`rounded-full h-8 w-8 sm:h-10 sm:w-10 ${audioEnabled ? "bg-gray-700" : "bg-red-600"} border-none text-white hover:bg-gray-600`}
               onClick={onToggleAudio}
             >
-              {audioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+              {audioEnabled ? <Mic className="h-4 w-4 sm:h-5 sm:w-5" /> : <MicOff className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
 
             <Button
               variant="outline"
               size="icon"
-              className={`rounded-full ${videoEnabled ? "bg-gray-700" : "bg-red-600"} border-none text-white hover:bg-gray-600`}
+              className={`rounded-full h-8 w-8 sm:h-10 sm:w-10 ${videoEnabled ? "bg-gray-700" : "bg-red-600"} border-none text-white hover:bg-gray-600`}
               onClick={onToggleVideo}
             >
-              {videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+              {videoEnabled ? <Video className="h-4 w-4 sm:h-5 sm:w-5" /> : <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
 
             <Button
               variant="outline"
               size="icon"
-              className={`rounded-full ${isScreenSharing ? "bg-green-600" : "bg-gray-700"} border-none text-white hover:bg-gray-600`}
+              className={`rounded-full h-8 w-8 sm:h-10 sm:w-10 ${isScreenSharing ? "bg-green-600" : "bg-gray-700"} border-none text-white hover:bg-gray-600`}
               onClick={toggleScreenSharing}
             >
-              <ScreenShare className="h-5 w-5" />
+              <ScreenShare className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
             <Button
               variant="outline"
               size="icon"
-              className={`rounded-full ${continuousSpeech ? "bg-green-600" : "bg-gray-700"} border-none text-white hover:bg-gray-600`}
+              className={`rounded-full h-8 w-8 sm:h-10 sm:w-10 ${continuousSpeech ? "bg-green-600" : "bg-gray-700"} border-none text-white hover:bg-gray-600`}
               onClick={onToggleContinuousSpeech}
             >
-              {isSpeaking ? <VolumeX className="h-5 w-5" onClick={onStopSpeaking} /> : <Volume2 className="h-5 w-5" />}
+              {isSpeaking ? <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" onClick={onStopSpeaking} /> : <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
 
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full bg-gray-700 border-none text-white hover:bg-gray-600"
+              className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-gray-700 border-none text-white hover:bg-gray-600"
             >
-              <Users className="h-5 w-5" />
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full bg-gray-700 border-none text-white hover:bg-gray-600"
+              className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-gray-700 border-none text-white hover:bg-gray-600"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full bg-red-600 border-none text-white hover:bg-red-700"
+              className="rounded-full h-8 w-8 sm:h-10 sm:w-10 bg-red-600 border-none text-white hover:bg-red-700"
               onClick={onEndCall}
             >
-              <PhoneOff className="h-5 w-5" />
+              <PhoneOff className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
         </div>
@@ -473,7 +473,7 @@ export default function EnhancedVideoCallInterface({
       {/* Chat area */}
       <Card className="border border-slate-200 dark:border-slate-800">
         <CardContent className="p-0">
-          <div className="flex flex-col h-[300px]">
+          <div className="flex flex-col h-[250px] sm:h-[300px]">
             <ScrollArea className="flex-1 p-4" ref={chatContainerRef}>
               <div className="space-y-4">
                 {messages.map((message) => (

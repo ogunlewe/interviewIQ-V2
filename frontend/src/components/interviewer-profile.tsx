@@ -74,13 +74,13 @@ export default function InterviewerProfile({ companyProfile, mood, interviewStag
   }
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Your Interviewer</CardTitle>
+    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm h-full">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-base font-medium">Interviewer</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col items-center">
-          <Avatar className="h-24 w-24 mb-3">
+      <CardContent className="px-4 pt-0 pb-4">
+        <div className="flex flex-col items-center space-y-4">
+          <Avatar className="h-14 w-14 border border-slate-200 dark:border-slate-800">
             <AvatarImage src={interviewer.avatar} />
             <AvatarFallback>
               {interviewer.name
@@ -89,38 +89,36 @@ export default function InterviewerProfile({ companyProfile, mood, interviewStag
                 .join("")}
             </AvatarFallback>
           </Avatar>
-          <h3 className="font-medium text-lg">{interviewer.name}</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{interviewer.role}</p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">{interviewer.company}</p>
-        </div>
-
-        <div className="space-y-2">
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">Experience</p>
-            <p className="text-sm">{interviewer.experience}</p>
+          
+          <div className="text-center">
+            <h3 className="font-medium text-sm">{interviewer.name}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{interviewer.role}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{interviewer.company}</p>
           </div>
-
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">Expertise</p>
-            <div className="flex flex-wrap gap-1">
-              {interviewer.expertise.map((skill, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {skill}
-                </Badge>
-              ))}
+          
+          <div className="w-full space-y-4 pt-2">
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Expertise</p>
+              <div className="flex flex-wrap gap-1">
+                {interviewer.expertise.map((skill) => (
+                  <Badge key={skill} variant="outline" className="text-xs py-0 h-5">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">Interview Style</p>
-            <Badge variant="outline" className="capitalize">
-              {mood}
-            </Badge>
-          </div>
-
-          <div className="pt-2">
-            <p className="text-xs text-slate-500 dark:text-slate-500 mb-1">Current Focus</p>
-            <p className="text-sm italic">{getCurrentFocus()}</p>
+            
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Interview Style</p>
+              <Badge variant="outline" className="capitalize text-xs py-0 h-5">
+                {mood}
+              </Badge>
+            </div>
+            
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Current Focus</p>
+              <p className="text-xs italic">{getCurrentFocus()}</p>
+            </div>
           </div>
         </div>
       </CardContent>

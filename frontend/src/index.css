@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -30,9 +31,12 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 222.2 47.4% 11.2%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
+
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'Fira Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   }
 
   .dark {
@@ -45,7 +49,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -62,9 +66,9 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 210 40% 98%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
   }
 }
 
@@ -73,7 +77,189 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
   }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium tracking-tight;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+}
+
+/* Add these responsive utilities */
+@layer utilities {
+  .responsive-container {
+    @apply container mx-auto px-4 sm:px-6 md:px-8;
+  }
+  
+  .responsive-heading {
+    @apply text-2xl sm:text-3xl md:text-4xl font-medium;
+  }
+  
+  .responsive-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  .responsive-icon {
+    @apply h-5 w-5 sm:h-6 sm:w-6;
+  }
+}
+
+/* Ensure proper box sizing and mobile viewport handling */
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+}
+
+/* Minimalist card styling */
+.card-minimal {
+  @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-sm;
+}
+
+/* Clean button styles */
+.btn-minimal {
+  @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300;
+}
+
+/* Message bubble styling */
+.message-bubble {
+  @apply rounded-lg px-3 py-2;
+}
+
+.message-bubble-user {
+  @apply bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100;
+}
+
+.message-bubble-ai {
+  @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100;
+}
+
+/* LeetCode-inspired utility classes */
+.leetcode-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.leetcode-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.dark .leetcode-card {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.leetcode-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dark .leetcode-header {
+  border-color: #334155;
+}
+
+.leetcode-content {
+  padding: 1rem;
+}
+
+.leetcode-success {
+  color: #22c55e !important;
+}
+
+.leetcode-warning {
+  color: #eab308 !important;
+}
+
+.leetcode-error {
+  color: #ef4444 !important;
+}
+
+.leetcode-info {
+  color: #3b82f6 !important;
+}
+
+/* Code editor styling */
+.code-editor {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  background-color: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  padding: 1rem;
+}
+
+.dark .code-editor {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+/* LeetCode-style tabs */
+.leetcode-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .leetcode-tabs {
+  border-color: #334155;
+}
+
+.leetcode-tab {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.leetcode-tab.active {
+  border-bottom-color: #2563eb;
+  color: #2563eb;
+}
+
+.dark .leetcode-tab.active {
+  border-bottom-color: #3b82f6;
+  color: #3b82f6;
+}
+
+/* Apply the fonts */
+body, button, input, select, textarea {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.code-like, code, pre, .editor {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.02em;
+}
+
+/* Ensure buttons have consistent typography */
+button, .button {
+  font-weight: 500 !important;
+  font-size: 14px !important;
 }
 

@@ -16,55 +16,50 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {showIntro ? (
         <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-screen">
-          <div className="max-w-3xl w-full text-center space-y-6">
-            <h1 className="text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4">
+          <div className="max-w-3xl w-full text-center space-y-8">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
               interviewIQ
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-8">
-              Your AI-powered interview assistant for software engineering
-              interviews. Practice with realistic questions and get instant
-              feedback.
+            <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Practice technical interviews with AI-powered feedback
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                <Calendar className="h-10 w-10 text-primary mb-4 mx-auto" />
-                <h3 className="text-lg font-semibold mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-100 dark:border-slate-800">
+                <Calendar className="h-8 w-8 text-slate-500 dark:text-slate-400 mb-4 mx-auto" />
+                <h3 className="text-base font-medium mb-2">
                   Realistic Interviews
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Experience interviews that simulate real-world technical
-                  discussions.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Experience interviews that simulate real-world scenarios
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                <Clock className="h-10 w-10 text-primary mb-4 mx-auto" />
-                <h3 className="text-lg font-semibold mb-2">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-100 dark:border-slate-800">
+                <Clock className="h-8 w-8 text-slate-500 dark:text-slate-400 mb-4 mx-auto" />
+                <h3 className="text-base font-medium mb-2">
                   Real-time Feedback
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Get immediate feedback on your answers and performance.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Get immediate insights on your performance
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
-                <FileText className="h-10 w-10 text-primary mb-4 mx-auto" />
-                <h3 className="text-lg font-semibold mb-2">Detailed Reports</h3>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Receive comprehensive reports to track your progress over
-                  time.
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-100 dark:border-slate-800">
+                <FileText className="h-8 w-8 text-slate-500 dark:text-slate-400 mb-4 mx-auto" />
+                <h3 className="text-base font-medium mb-2">Detailed Reports</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Track your progress over time
                 </p>
               </div>
             </div>
 
             <Button
-              size="lg"
               onClick={handleStartInterview}
-              className="text-lg px-8 py-6"
+              className="mt-8 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900"
             >
               Start Your Interview
             </Button>
@@ -72,12 +67,12 @@ export default function Home() {
         </div>
       ) : (
         <div className="container mx-auto px-4 py-8">
-          <header className="mb-8">
+          <header className="mb-6">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+              <h1 className="text-2xl font-medium text-slate-900 dark:text-slate-100">
                 interviewIQ
               </h1>
-              <Button variant="outline" onClick={() => setShowIntro(true)}>
+              <Button variant="ghost" onClick={() => setShowIntro(true)}>
                 Back to Home
               </Button>
             </div>
@@ -87,7 +82,7 @@ export default function Home() {
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-900">
                   <TabsTrigger value="interview" className="flex items-center">
                     <Briefcase className="mr-2 h-4 w-4" />
                     Interview Session

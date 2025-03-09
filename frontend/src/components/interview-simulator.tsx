@@ -517,8 +517,8 @@ export default function InterviewSimulator() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="col-span-1 md:col-span-2 lg:col-span-2 order-1">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="interview">Interview Session</TabsTrigger>
@@ -672,8 +672,8 @@ export default function InterviewSimulator() {
                     }}
                   />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="md:col-span-1 order-2 md:order-1">
                       <InterviewerProfile
                         companyProfile={companyProfile}
                         mood={interviewerMood}
@@ -681,7 +681,7 @@ export default function InterviewSimulator() {
                       />
                     </div>
 
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-2 order-1 md:order-2">
                       <Card className="border-slate-200 dark:border-slate-800">
                         <CardHeader className="pb-3">
                           <CardTitle className="flex items-center justify-between text-lg">
@@ -1177,9 +1177,13 @@ export default function InterviewSimulator() {
           </TabsContent>
         </Tabs>
       </div>
-
-      <div className="lg:col-span-1">
-        <FeedbackPanel messages={displayMessages} showFeedback={showFeedback} setShowFeedback={setShowFeedback} />
+      
+      <div className="col-span-1 order-2">
+        <FeedbackPanel 
+          messages={displayMessages} 
+          showFeedback={showFeedback} 
+          setShowFeedback={setShowFeedback} 
+        />
       </div>
     </div>
   )
