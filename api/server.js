@@ -12,6 +12,8 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:3000',
+    'https://interview-iq-api.vercel.app',
+    'https://interview-api-coral.vercel.app/api/chat',
     'http://localhost:5173'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
