@@ -11,9 +11,9 @@ const app = express();
 // Updated CORS configuration
 app.use(cors({
   origin: [
+    'https://interview-71x6pa0ee-agri-connect.vercel.app',
+    'https://interview-api-coral.vercel.app',
     'http://localhost:3000',
-    'https://interview-iq-api.vercel.app',
-    'https://interview-api-coral.vercel.app/api/chat',
     'http://localhost:5173'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
