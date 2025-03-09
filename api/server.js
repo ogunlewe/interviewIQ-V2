@@ -11,8 +11,6 @@ const app = express();
 // Updated CORS configuration
 app.use(cors({
   origin: [
-    'https://interview-71x6pa0ee-agri-connect.vercel.app',
-    'https://devinterviewpro.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173'
   ],
