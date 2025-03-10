@@ -7,7 +7,7 @@ dotenv.config({path: '.env'});
 
 const app = express();
 
-// CORS configuration
+
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -17,7 +17,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Handle chat requests
+
 app.post("/api/chat", async (req, res) => {
   try {
     const { messages } = req.body;
@@ -26,7 +26,7 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Invalid request: messages array is required" });
     }
 
-    // Extract system message and conversation history
+ 
     const systemMessage = messages.find((m) => m.role === "system")?.content || "";
     const conversationHistory = messages
       .filter((m) => m.role !== "system")
@@ -42,14 +42,13 @@ app.post("/api/chat", async (req, res) => {
       Respond to the user's last message. Remember to stay in character as a technical interviewer.
     `;
 
-    // Check if API key is available
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
         error: "Gemini API key is missing. Please set the GEMINI_API_KEY environment variable."
       });
     }
 
-    // Generate content with Gemini
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     const result = await model.generateContent(prompt);
@@ -64,12 +63,11 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// For local development
+
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
@@ -77,5 +75,5 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Export for Vercel
+
 export default app;

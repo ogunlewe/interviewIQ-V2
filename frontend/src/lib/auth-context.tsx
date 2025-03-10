@@ -10,6 +10,8 @@ import {
   sendPasswordResetEmail 
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { auth } from "./firebase";
 
 type AuthContextType = {
@@ -86,7 +88,6 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
   );
 };
 
-// Protected route component
 export const ProtectedRoute: React.FC<{
   children: React.ReactNode;
   redirectTo?: string;

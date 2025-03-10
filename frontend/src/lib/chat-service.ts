@@ -4,7 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { generateUniqueId } from "./utils";
 
-// API URL - can be configured based on environment
+
 const API_URL = import.meta.env.VITE_API_URL || 
   (process.env.NODE_ENV === 'production' 
     ? 'https://interview-api-coral.vercel.app/api/chat'
@@ -16,7 +16,7 @@ export interface Message {
   content: string;
 }
 
-// Function to send messages to the backend
+
 export async function sendMessage(
   messages: Message[]
 ): Promise<{ response: string }> {
@@ -51,7 +51,7 @@ export async function sendMessage(
   }
 }
 
-// Hook to use in components
+
 export function useChat(options: {
   initialMessages?: Message[];
   api?: string;
@@ -72,7 +72,7 @@ export function useChat(options: {
 
     if (!input.trim()) return;
 
-    // Add user message to the list
+   
     const userMessage: Message = {
       id: generateUniqueId(),
       role: "user",
@@ -85,10 +85,10 @@ export function useChat(options: {
     setError(null);
 
     try {
-      // Send to the backend
+
       const { response } = await sendMessage([...messages, userMessage]);
 
-      // Add assistant response
+
       const assistantMessage: Message = {
         id: generateUniqueId(),
         role: "assistant",
@@ -107,7 +107,6 @@ export function useChat(options: {
   };
 
   const reload = () => {
-    // Keep only the system message if it exists
     const systemMessage = messages.find((m) => m.role === "system");
     setMessages(systemMessage ? [systemMessage] : []);
     setError(null);
