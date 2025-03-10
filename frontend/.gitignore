@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 
 .vercel
+frontend/.env
+frontend/.env.development
+frontend/.env.production
+frontend/.env.local
+
+backend/.env
+
+
