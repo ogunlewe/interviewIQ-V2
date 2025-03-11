@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, FormEvent } from "react"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Textarea } from "./ui/textarea"
@@ -38,71 +37,161 @@ import FeedbackPanel from "./feedback-panel"
 import CodeEditor from "./code-editor"
 import { useChat } from "../lib/chat-service"
 import InterviewerProfile from "./interviewer-profile"
-import EnhancedVideoCallInterface from "./enhanced-video-call-interface" // Add this import
+import EnhancedVideoCallInterface from "./enhanced-video-call-interface"
 import Whiteboard from "./whiteboard"
 import NoteTaker from "./note-taker"
 import { SpeechRecognitionService } from "../lib/speech-service"
-import { UnifiedSpeechService } from "../lib/unified-speech-service" // Add this import
-import { Input } from "./ui/input" // Add this import
+import { UnifiedSpeechService } from "../lib/unified-speech-service"
+import { Input } from "./ui/input"
+import { CodeEditorRef } from './code-editor'
+import type { Message } from '../lib/chat-service'
+
+function useInterviewState() {
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["JavaScript", "React", "Data Structures"]);
+  const [difficulty, setDifficulty] = useState<string>("intermediate");
+  const [interviewerMood, setInterviewerMood] = useState<string>("neutral");
+  const [companyProfile, setCompanyProfile] = useState<string>("tech-startup");
+  const [userInput, setUserInput] = useState('');
+
+  const generateSystemPrompt = () => {
+    const persona = companyProfile === "tech-startup" 
+      ? "As a Senior Developer & Co-founder at InnovateTech, I've helped grow our team from 5 to 50 engineers. I value creativity and problem-solving ability."
+      : companyProfile === "enterprise"
+      ? "As an Engineering Manager at Enterprise Solutions Inc., I oversee multiple teams working on large-scale systems. I focus on maintainable and scalable solutions."
+      : "As a Principal Engineer at TechGiant, I've worked on systems that serve millions of users. I look for exceptional problem-solving skills.";
+
+    const style = interviewerMood === "friendly"
+      ? "warm and encouraging, while still being thorough"
+      : interviewerMood === "challenging"
+      ? "demanding but fair, pushing candidates to demonstrate their knowledge"
+      : "professional and balanced, providing direct feedback";
+
+    return `You are a real technical interviewer conducting an interview. Maintain a consistent personality throughout.
+
+${persona}
+
+I conduct interviews in a ${style} manner. Today we'll discuss: ${selectedTopics.join(", ")} at a ${difficulty} level.
+
+Key Behaviors:
+1. Act like a real person, not an AI. Use natural language and show genuine interest.
+2. Stay in character - draw from your years of industry experience.
+3. React naturally to responses - show approval, skepticism, or interest.
+4. Ask relevant follow-up questions based on responses.
+5. Share brief experiences from your career when relevant.
+6. Reference specific challenges from your company.
+7. Use conversational language and natural transitions.
+
+Remember to never acknowledge being an AI and maintain consistent personality throughout.`;
+  };
+
+  return {
+    selectedTopics,
+    setSelectedTopics,
+    difficulty,
+    setDifficulty,
+    interviewerMood,
+    setInterviewerMood,
+    companyProfile,
+    setCompanyProfile,
+    userInput,
+    setUserInput,
+    systemPrompt: generateSystemPrompt()
+  };
+}
 
 export default function InterviewSimulator() {
-  const [selectedTopics, setSelectedTopics] = useState<string[]>(["JavaScript", "React", "Data Structures"])
-  const [difficulty, setDifficulty] = useState<string>("intermediate")
-  const [activeTab, setActiveTab] = useState<string>("interview")
-  const [showFeedback, setShowFeedback] = useState<boolean>(false)
-  const [interviewStage, setInterviewStage] = useState<string>("intro")
-  const [interviewStarted, setInterviewStarted] = useState<boolean>(false)
-  const [elapsedTime, setElapsedTime] = useState<number>(0)
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false)
-  const [showCodeEditor, setShowCodeEditor] = useState<boolean>(false)
-  const [isCodeEditorExpanded, setIsCodeEditorExpanded] = useState<boolean>(false)
-  const [showWhiteboard, setShowWhiteboard] = useState<boolean>(false)
-  const [showNotes, setShowNotes] = useState<boolean>(false)
-  const [isThinking, setIsThinking] = useState<boolean>(false)
-  const [audioEnabled, setAudioEnabled] = useState<boolean>(false)
-  const [videoEnabled, setVideoEnabled] = useState<boolean>(false)
-  const [interviewerMood, setInterviewerMood] = useState<string>("neutral")
-  const [companyProfile, setCompanyProfile] = useState<string>("tech-startup")
-  const [showVideoCall, setShowVideoCall] = useState<boolean>(false)
-  const [networkQuality, setNetworkQuality] = useState<number>(3) // 0-3, where 3 is excellent
-  const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
-  const [isListening, setIsListening] = useState<boolean>(false)
-  const [speechEnabled, setSpeechEnabled] = useState<boolean>(false)
-  // Add a new state variable for continuous speech mode
-  const [continuousSpeech, setContinuousSpeech] = useState<boolean>(false)
-  // Add new state variables for voice options
-  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
-  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null)
-  // Add a new state variable to track which messages have been spoken
-  const [spokenMessageIds, setSpokenMessageIds] = useState<Set<string>>(new Set())
-  const [showScrollButton, setShowScrollButton] = useState(false)
+  const {
+    selectedTopics,
+    setSelectedTopics,
+    difficulty,
+    setDifficulty,
+    interviewerMood,
+    setInterviewerMood,
+    companyProfile,
+    setCompanyProfile,
+    userInput,
+    setUserInput,
+    systemPrompt
+  } = useInterviewState();
+
+  const [activeTab, setActiveTab] = useState<string>("interview");
+  const [showFeedback, setShowFeedback] = useState<boolean>(false);
+  const [interviewStage, setInterviewStage] = useState<string>("intro");
+  const [interviewStarted, setInterviewStarted] = useState<boolean>(false);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [showCodeEditor, setShowCodeEditor] = useState<boolean>(false);
+  const [isCodeEditorExpanded, setIsCodeEditorExpanded] = useState<boolean>(false);
+  const [showWhiteboard, setShowWhiteboard] = useState<boolean>(false);
+  const [showNotes, setShowNotes] = useState<boolean>(false);
+  const [isThinking, setIsThinking] = useState<boolean>(false);
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
+  const [videoEnabled, setVideoEnabled] = useState<boolean>(false);
+  const [showVideoCall, setShowVideoCall] = useState<boolean>(false);
+  const [networkQuality, setNetworkQuality] = useState<number>(3);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechEnabled, setSpeechEnabled] = useState<boolean>(false);
+  const [continuousSpeech, setContinuousSpeech] = useState<boolean>(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [spokenMessageIds, setSpokenMessageIds] = useState<Set<string>>(new Set());
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const thinkingTimerRef = useRef<NodeJS.Timeout | null>(null)
   const speechServiceRef = useRef<UnifiedSpeechService | null>(null)
   const speechRecognitionRef = useRef<SpeechRecognitionService | null>(null)
 
-  // Add new state variables for ElevenLabs
   const [useElevenLabs, setUseElevenLabs] = useState<boolean>(false)
   const [elevenLabsApiKey, setElevenLabsApiKey] = useState<string>("")
   const [elevenLabsVoiceId, setElevenLabsVoiceId] = useState<string>("")
   const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ id: string; name: string }>>([])
 
-  // Add new state variables for speech pause duration and silence timer
-  const [speechPauseDuration, setSpeechPauseDuration] = useState(1500); // 1.5 seconds of silence before sending
+  const [speechPauseDuration, setSpeechPauseDuration] = useState(1500)
   const silenceTimer = useRef<NodeJS.Timeout | null>(null)
   const [isSpeechProcessing, setIsSpeechProcessing] = useState(false)
 
-  // Initialize speech services
+  const codeEditorRef = useRef<CodeEditorRef>(null)
+
+  const { messages, handleSubmit, isLoading, reload, error } = useChat({
+    initialMessages: [
+      {
+        id: "welcome",
+        role: "system",
+        content: systemPrompt,
+      },
+    ],
+  });
+
+  // Filter out system messages for display
+  const displayMessages = messages.filter((m: Message) => m.role !== 'system');
+
+  const handleDifficultyChange = (level: string) => {
+    setDifficulty(level)
+  }
+
+  const handleCompanyChange = (company: string) => {
+    setCompanyProfile(company)
+  }
+
+  const handleInterviewerMoodChange = (mood: string) => {
+    setInterviewerMood(mood)
+  }
+
+  const handleStartInterview = () => {
+    setInterviewStarted(true)
+    setIsTimerRunning(true)
+    setActiveTab("interview")
+  }
+
   useEffect(() => {
     try {
       speechServiceRef.current = UnifiedSpeechService.getInstance()
       speechRecognitionRef.current = SpeechRecognitionService.getInstance()
       setSpeechEnabled(true)
 
-      // Get available voices
       if (speechServiceRef.current) {
-        // Browser voices
         const voices = speechServiceRef.current.getBrowserVoices()
         setAvailableVoices(voices)
         const preferredVoice = speechServiceRef.current.getPreferredBrowserVoice()
@@ -110,11 +199,9 @@ export default function InterviewSimulator() {
           setSelectedVoice(preferredVoice)
         }
 
-        // ElevenLabs voices
         const elVoices = speechServiceRef.current.getElevenLabsVoices()
         setElevenLabsVoices(elVoices)
 
-        // Check for stored API key
         const storedApiKey = localStorage.getItem("elevenLabsApiKey")
         if (storedApiKey) {
           setElevenLabsApiKey(storedApiKey)
@@ -139,10 +226,8 @@ export default function InterviewSimulator() {
     }
   }, [])
 
-  // Add a tooltip or small notification when continuous speech is first enabled
   useEffect(() => {
     if (continuousSpeech) {
-      // Show a temporary notification that auto-speak is enabled
       const notification = document.createElement("div")
       notification.className =
         "fixed bottom-4 right-4 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-4 py-2 rounded-md shadow-md text-sm flex items-center z-50"
@@ -150,7 +235,6 @@ export default function InterviewSimulator() {
         '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.728-2.728"></path></svg>Automatic voice mode enabled'
       document.body.appendChild(notification)
 
-      // Remove after 3 seconds
       setTimeout(() => {
         notification.style.opacity = "0"
         notification.style.transition = "opacity 0.5s"
@@ -163,11 +247,9 @@ export default function InterviewSimulator() {
     }
   }, [continuousSpeech])
 
-  // Simulate network quality changes
   useEffect(() => {
     if (showVideoCall) {
       const interval = setInterval(() => {
-        // Randomly change network quality for realism
         if (Math.random() < 0.1) {
           setNetworkQuality((prev) => Math.max(1, prev - 1))
         } else if (Math.random() < 0.1) {
@@ -179,61 +261,6 @@ export default function InterviewSimulator() {
     }
   }, [showVideoCall])
 
-  const systemPrompt = `
-   🛠 Revised System Instructions:
-You are InterviewIQ, an expert technical interviewer for software engineers.
-
-Interview Details:
-
-Topics: ${selectedTopics.join(", ")}
-Difficulty Level: ${difficulty}
-Company Profile: ${companyProfile}
-🎯 Interview Structure:
-The interview consists of the following stages:
-
-Introduction & Background: Briefly introduce yourself and ask quick, relevant background questions.
-Technical Knowledge Assessment: Test the candidate's understanding of the selected topics with concise questions.
-Coding Challenge: Present a coding problem. The platform includes a built-in code editor for the candidate to use.
-System Design Discussion: Provide a design challenge. The candidate can use the integrated whiteboard for visual explanations.
-Behavioral Questions: Evaluate the candidate's soft skills and fit with the company culture.
-Candidate Questions & Wrap-Up: Allow the candidate to ask questions and conclude the interview professionally.
-🚦 Guidelines for Asking Questions:
-Ask one question at a time based on the current stage.
-Keep questions brief and realistic, simulating a real HR interview experience.
-Provide constructive feedback for each response:
-Rate the answer on a scale of 1-5.
-Suggest improvements if needed.
-Offer hints instead of answers if the candidate is struggling.
-Progress quickly to the next stage or question unless a follow-up is necessary.
-🎭 Maintain a Realistic Persona:
-Act like a real person to enhance the interview simulation.
-Maintain a professional yet ${interviewerMood} demeanor.
-If asked about your creation, simply respond, "I am your interviewer for today."
-🧠 Platform Features You Can Utilize:
-Coding Challenges: The platform has a built-in code editor.
-System Design: Use the integrated whiteboard for design tasks.
-Note-Taking: Candidates have access to a digital notepad.
-Communication Tools: The platform supports voice and video chat.
-Feedback Panel: Candidates can provide feedback through the built-in system.
-✅ Important Reminders:
-Avoid asking too many questions per stage. Keep the interview efficient and realistic.
-Focus on simulating the experience of a real technical interview
-  `
-
-  const { messages, input, handleInputChange, handleSubmit, isLoading, reload, error } = useChat({
-    initialMessages: [
-      {
-        id: "welcome",
-        role: "system",
-        content: systemPrompt,
-      },
-    ],
-  })
-
-  // Filter out system messages for display
-  const displayMessages = messages.filter((message) => message.role !== "system")
-
-  // Start/stop interview timer
   useEffect(() => {
     if (isTimerRunning) {
       timerRef.current = setInterval(() => {
@@ -250,7 +277,6 @@ Focus on simulating the experience of a real technical interview
     }
   }, [isTimerRunning])
 
-  // Format elapsed time
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -269,7 +295,7 @@ Focus on simulating the experience of a real technical interview
     setShowNotes(false)
     setIsThinking(false)
     setShowVideoCall(false)
-    setSpokenMessageIds(new Set()) // Reset spoken message IDs
+    setSpokenMessageIds(new Set())
     if (timerRef.current) {
       clearInterval(timerRef.current)
     }
@@ -285,31 +311,12 @@ Focus on simulating the experience of a real technical interview
     setSelectedTopics(topics)
   }
 
-  const handleDifficultyChange = (level: string) => {
-    setDifficulty(level)
-  }
-
-  const handleCompanyChange = (company: string) => {
-    setCompanyProfile(company)
-  }
-
-  const handleInterviewerMoodChange = (mood: string) => {
-    setInterviewerMood(mood)
-  }
-
-  const handleStartInterview = () => {
-    setInterviewStarted(true)
-    setIsTimerRunning(true)
-    setActiveTab("interview")
-  }
-
   const handlePauseInterview = () => {
     setIsTimerRunning((prev) => !prev)
   }
 
   const handleThinkingTime = () => {
     setIsThinking(true)
-    // Automatically stop thinking after 30 seconds
     thinkingTimerRef.current = setTimeout(() => {
       setIsThinking(false)
     }, 30000)
@@ -365,59 +372,82 @@ Focus on simulating the experience of a real technical interview
     }
   }
 
-  // Modify the speakMessage function to handle different message types
-  const speakMessage = (message: string, isNewMessage = false, messageId?: string) => {
-    if (!speechServiceRef.current || !speechEnabled) return
-
-    setIsSpeaking(true)
-
-    // Clean message handling is now done in the UnifiedSpeechService
-    speechServiceRef.current.speak(message, {
-      voice: selectedVoice || undefined,
-      onEnd: () => {
-        setIsSpeaking(false)
-      },
-      onError: () => {
-        setIsSpeaking(false)
-      },
-    })
-
-    // If a messageId is provided, mark it as spoken
-    if (messageId) {
-      setSpokenMessageIds((prev) => new Set([...prev, messageId]))
+  const handleCodeSuggestion = (message: string) => {
+    if (codeEditorRef && codeEditorRef.current) {
+      codeEditorRef.current.parseSuggestion(message);
     }
-  }
+  };
 
-  // Add a function to toggle continuous speech mode
+  const findLastAssistantMessage = (messages: Message[]): Message | undefined => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') {
+        return messages[i];
+      }
+    }
+    return undefined;
+  };
+
+  const speakMessage = (message: string, isNewMessage = false, messageId?: string) => {
+    if (!speechServiceRef.current || !speechEnabled) return;
+
+    setIsSpeaking(true);
+
+    const segments = message.split(/(\[LINE \d+(?:-\d+)?\]:.*?)(?=\[LINE|\n|$)/g);
+    
+    let currentIndex = 0;
+    
+    const speakNextSegment = () => {
+      if (currentIndex >= segments.length) {
+        setIsSpeaking(false);
+        if (messageId) {
+          setSpokenMessageIds((prev) => new Set([...prev, messageId]));
+        }
+        return;
+      }
+
+      const segment = segments[currentIndex];
+      
+      if (segment.trim().match(/^\[LINE \d+(?:-\d+)?\]:/)) {
+        handleCodeSuggestion(segment.trim());
+      }
+
+      speechServiceRef.current?.speak(segment, {
+        voice: selectedVoice || undefined,
+        onEnd: () => {
+          currentIndex++;
+          setTimeout(speakNextSegment, 500);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+        },
+      });
+    };
+
+    speakNextSegment();
+  };
+
   const toggleContinuousSpeech = () => {
-    const newMode = !continuousSpeech
-    setContinuousSpeech(newMode)
+    const newMode = !continuousSpeech;
+    setContinuousSpeech(newMode);
 
-    // If turning on continuous speech, speak the last message immediately if it hasn't been spoken
     if (newMode) {
-      const lastMessage = displayMessages.findLast((m) => m.role === "assistant")
+      const lastMessage = findLastAssistantMessage(messages);
       if (lastMessage && !isSpeaking && !spokenMessageIds.has(lastMessage.id)) {
-        speakMessage(lastMessage.content)
-        // Mark this message as spoken
-        setSpokenMessageIds((prev) => new Set([...prev, lastMessage.id]))
+        speakMessage(lastMessage.content);
+        setSpokenMessageIds((prev) => new Set([...prev, lastMessage.id]));
       }
     } else {
-      // If turning off continuous mode, stop any ongoing speech
-      stopSpeaking()
+      stopSpeaking();
     }
-  }
+  };
 
-  // Add an effect to automatically speak new messages when they arrive in continuous mode
   useEffect(() => {
-    // Check if a new message has arrived and it's from the interviewer (assistant)
     if (displayMessages.length > 0 && !isLoading && continuousSpeech) {
       const lastMessage = displayMessages[displayMessages.length - 1]
       if (lastMessage.role === "assistant" && !spokenMessageIds.has(lastMessage.id)) {
-        // Wait a short moment before speaking to ensure UI has updated
         setTimeout(() => {
           if (!isSpeaking) {
             speakMessage(lastMessage.content, true)
-            // Mark this message as spoken
             setSpokenMessageIds((prev) => new Set([...prev, lastMessage.id]))
           }
         }, 300)
@@ -425,7 +455,6 @@ Focus on simulating the experience of a real technical interview
     }
   }, [displayMessages, continuousSpeech, isLoading, isSpeaking, spokenMessageIds])
 
-  // Stop speaking
   const stopSpeaking = () => {
     if (speechServiceRef.current && speechServiceRef.current.isSpeaking()) {
       speechServiceRef.current.stop()
@@ -433,60 +462,46 @@ Focus on simulating the experience of a real technical interview
     }
   }
 
-  // Update the speech recognition logic
-  useEffect(() => {
-    const handleSpeechResult = (transcript: string) => {
-      setInput(transcript);
-      
-      // Reset the silence timer when we receive new speech
-      if (silenceTimer.current) {
-        clearTimeout(silenceTimer.current);
-      }
-      
-      // Start a new silence timer
-      silenceTimer.current = setTimeout(() => {
-        if (isListening && transcript.trim().length > 0) {
-          setIsSpeechProcessing(true);
-          stopListening();
-          
-          // Small delay to show "Processing..." status
-          setTimeout(() => {
-            handleSubmit(new Event('submit') as React.FormEvent<HTMLFormElement>);
-            setIsSpeechProcessing(false);
-          }, 500);
-        }
-      }, speechPauseDuration);
-    };
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setUserInput(value);
+  };
 
-    if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.onResult = handleSpeechResult;
-    }
-
-    return () => {
-      if (silenceTimer.current) {
-        clearTimeout(silenceTimer.current);
-      }
-    };
-  }, [isListening, speechRecognitionRef.current, handleSubmit]);
-
-  // Start speech recognition
   const startListening = () => {
-    if (!speechRecognitionRef.current || !speechEnabled) return
+    if (!speechRecognitionRef.current || !speechEnabled) return;
 
-    setIsListening(true)
+    setIsListening(true);
 
     speechRecognitionRef.current.start(
       (transcript) => {
-        // Update input field with transcript
-        handleInputChange({ target: { value: transcript } } as React.ChangeEvent<HTMLTextAreaElement>)
+        setUserInput(transcript);
+        
+        if (silenceTimer.current) {
+          clearTimeout(silenceTimer.current);
+        }
+        
+        silenceTimer.current = setTimeout(() => {
+          if (transcript.trim().length > 0) {
+            setIsSpeechProcessing(true);
+            stopListening();
+            
+            setTimeout(() => {
+              handleSubmit(new Event('submit') as unknown as FormEvent<HTMLFormElement>, transcript);
+              setIsSpeechProcessing(false);
+              setUserInput('');
+            }, 500);
+          }
+        }, speechPauseDuration);
       },
       () => {
-        setIsListening(false)
-      },
-    )
-  }
+        setIsListening(false);
+        if (silenceTimer.current) {
+          clearTimeout(silenceTimer.current);
+        }
+      }
+    );
+  };
 
-  // Stop speech recognition
   const stopListening = () => {
     if (speechRecognitionRef.current && speechRecognitionRef.current.isRecognizing()) {
       speechRecognitionRef.current.stop()
@@ -494,7 +509,6 @@ Focus on simulating the experience of a real technical interview
     }
   }
 
-  // Get interviewer details based on company profile
   const getInterviewerDetails = () => {
     switch (companyProfile) {
       case "tech-startup":
@@ -530,12 +544,9 @@ Focus on simulating the experience of a real technical interview
 
   const interviewer = getInterviewerDetails()
 
-  // Add a function to handle message sending for the enhanced video call interface
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return
 
-    // This replicates what handleSubmit would do but with a custom message
-    // You'll need to adapt this based on your actual chat implementation
     const fakeEvent = {
       preventDefault: () => {},
       target: {
@@ -543,10 +554,8 @@ Focus on simulating the experience of a real technical interview
       },
     } as unknown as React.FormEvent<HTMLFormElement>
 
-    // Update the input first
     handleInputChange({ target: { value: message } } as React.ChangeEvent<HTMLTextAreaElement>)
 
-    // Then submit after a short delay to ensure the input is updated
     setTimeout(() => {
       handleSubmit(fakeEvent)
     }, 10)
@@ -558,11 +567,9 @@ Focus on simulating the experience of a real technical interview
     localStorage.setItem("elevenLabsApiKey", elevenLabsApiKey)
     if (speechServiceRef.current) {
         speechServiceRef.current.setElevenLabsApiKey(elevenLabsApiKey)
-        // Enable ElevenLabs after setting the API key
         setUseElevenLabs(true)
         speechServiceRef.current.setUseElevenLabs(true)
         
-        // Fetch and set available voices
         const voices = speechServiceRef.current.getElevenLabsVoices()
         setElevenLabsVoices(voices)
     }
@@ -573,37 +580,6 @@ Focus on simulating the experience of a real technical interview
     speechServiceRef.current?.setElevenLabsVoiceId(voiceId)
   }
 
-  // Add this effect after the displayMessages map
-  useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    const scrollArea = document.getElementById('chat-scroll-area');
-    if (scrollArea) {
-      const scrollContainer = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
-      if (scrollContainer) {
-        const lastMessage = messages[messages.length - 1];
-        const isUserLastMessage = lastMessage?.role === 'user';
-        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
-        
-        // Update scroll button visibility - hide when loading or at bottom
-        setShowScrollButton(!isNearBottom && !isLoading && messages.length > 0);
-        
-        // Auto-scroll in two cases:
-        // 1. User sent the message
-        // 2. User was already at bottom (within 100px)
-        if (isUserLastMessage || isNearBottom) {
-          requestAnimationFrame(() => {
-            scrollContainer.style.scrollBehavior = 'smooth';
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            setTimeout(() => {
-              scrollContainer.style.scrollBehavior = 'auto';
-            }, 1000);
-          });
-        }
-      }
-    }
-  }, [messages, isLoading]);
-
-  // Add scroll event listener to update button visibility
   useEffect(() => {
     const scrollArea = document.getElementById('chat-scroll-area');
     if (!scrollArea) return;
@@ -613,14 +589,79 @@ Focus on simulating the experience of a real technical interview
 
     const handleScroll = () => {
       const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
-      setShowScrollButton(!isNearBottom && messages.length > 0);
+      if (showScrollButton !== !isNearBottom) {
+        setShowScrollButton(!isNearBottom && messages.length > 0);
+      }
     };
 
     scrollContainer.addEventListener('scroll', handleScroll);
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, [messages.length]);
+  }, [messages.length, showScrollButton]);
 
-  // Add scroll to bottom function
+  useEffect(() => {
+    const scrollArea = document.getElementById('chat-scroll-area');
+    if (!scrollArea) return;
+
+    const scrollContainer = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+    if (!scrollContainer) return;
+
+    const lastMessage = messages[messages.length - 1];
+    const isUserLastMessage = lastMessage?.role === 'user';
+    const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
+    
+    if (showScrollButton !== (!isNearBottom && !isLoading && messages.length > 0)) {
+      setShowScrollButton(!isNearBottom && !isLoading && messages.length > 0);
+    }
+    
+    if (isUserLastMessage || isNearBottom) {
+      requestAnimationFrame(() => {
+        scrollContainer.style.scrollBehavior = 'smooth';
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        setTimeout(() => {
+          scrollContainer.style.scrollBehavior = 'auto';
+        }, 1000);
+      });
+    }
+  }, [messages, isLoading]);
+
+  const handleCodeRun = async (code: string, language: string) => {
+    console.log('Handling code run with silent review:', code.startsWith('@silent_review'));
+    
+    if (code.startsWith('@silent_review')) {
+      console.log('Processing silent review...');
+      try {
+        const response = await handleSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>, code, true);
+        console.log('Silent review response:', response);
+        
+        if (response && response.includes('[LINE')) {
+          console.log('Found line-specific suggestions, parsing...');
+          if (codeEditorRef?.current) {
+            codeEditorRef.current.parseSuggestion(response);
+          } else {
+            console.error('Code editor reference not available');
+          }
+        } else {
+          console.log('No line-specific suggestions found in response');
+        }
+      } catch (error) {
+        console.error('Error during silent review:', error);
+      }
+    } else if (code.includes('final review of this')) {
+      console.log('Processing final code submission...');
+      try {
+        await handleSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>, code, false);
+        setShowCodeEditor(false);
+        if (interviewStage === 'coding') {
+          handleNextStage();
+        }
+      } catch (error) {
+        console.error('Error during code submission:', error);
+      }
+    } else {
+      handleSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>, code, false);
+    }
+  };
+
   const scrollToBottom = () => {
     const scrollArea = document.getElementById('chat-scroll-area');
     if (scrollArea) {
@@ -969,7 +1010,6 @@ Focus on simulating the experience of a real technical interview
                                 )}
                               </div>
                             )}
-                            {/* Update scroll button style */}
                             {showScrollButton && (
                               <button
                                 onClick={scrollToBottom}
@@ -987,25 +1027,9 @@ Focus on simulating the experience of a real technical interview
                               <CodeEditor 
                                 isExpanded={isCodeEditorExpanded}
                                 onToggleExpand={handleExpandCodeEditor}
+                                onCodeRun={handleCodeRun}
                                 onSubmit={() => setShowCodeEditor(false)}
-                                onCodeRun={async (code, language) => {
-                                  // Create a message to send to Gemini about the code
-                                  const codeReviewMessage = `
-I've just written this code in ${language}:
-
-\`\`\`${language}
-${code}
-\`\`\`
-
-Please review my code and provide:
-1. An analysis of the solution
-2. Any potential improvements
-3. Time and space complexity (if applicable)
-4. Any edge cases I might have missed
-`;
-                                  // Send the message using the existing chat mechanism
-                                  handleSendMessage(codeReviewMessage);
-                                }}
+                                ref={codeEditorRef}
                               />
                             </div>
                           </div>
@@ -1024,7 +1048,13 @@ Please review my code and provide:
                         )}
 
                         <CardFooter>
-                          <form onSubmit={handleSubmit} className="w-full space-y-3">
+                          <form onSubmit={(e) => {
+                            e.preventDefault();
+                            if (userInput.trim()) {
+                              handleSubmit(e, userInput);
+                              setUserInput('');
+                            }
+                          }} className="w-full space-y-3">
                             <div className="flex justify-between items-center mb-2">
                               <Button
                                 type="button"
@@ -1081,13 +1111,13 @@ Please review my code and provide:
                                       ? "Processing your speech..."
                                       : "Type your answer here..."
                               }
-                              value={input}
                               onChange={handleInputChange}
+                              value={userInput}
                               className="min-h-[80px]"
                               disabled={isThinking || isListening || isSpeechProcessing}
                             />
                             <div className="flex justify-end">
-                              <Button type="submit" disabled={isLoading || !input.trim() || isThinking || isListening || isSpeechProcessing}>
+                              <Button type="submit" disabled={isLoading || !userInput.trim() || isThinking || isListening || isSpeechProcessing}>
                                 <Send className="h-4 w-4 mr-2" />
                                 Send Answer
                               </Button>

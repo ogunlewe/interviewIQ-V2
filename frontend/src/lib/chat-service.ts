@@ -44,7 +44,9 @@ export async function sendMessage(
       }
     }
 
-    return await response.json();
+    const jsonResponse = await response.json();
+    console.log('Received response:', jsonResponse); // Debug log
+    return jsonResponse;
   } catch (error) {
     console.error("Error sending message:", error);
     throw error;
@@ -67,35 +69,52 @@ export function useChat(options: {
     setInput(e.target.value);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement> | { preventDefault: () => void }, 
+    customInput?: string,
+    isSilentReview?: boolean
+  ) => {
     e.preventDefault();
+    
+    const messageContent = customInput || input;
+    if (!messageContent.trim()) return;
 
-    if (!input.trim()) return;
+    // Don't add silent review requests to the chat
+    if (!isSilentReview) {
+      const userMessage: Message = {
+        id: generateUniqueId(),
+        role: "user",
+        content: messageContent,
+      };
+      setMessages((prev) => [...prev, userMessage]);
+    }
 
-   
-    const userMessage: Message = {
-      id: generateUniqueId(),
-      role: "user",
-      content: input,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('Sending message:', messageContent);
+      console.log('Is silent review:', isSilentReview);
 
-      const { response } = await sendMessage([...messages, userMessage]);
+      const allMessages = isSilentReview 
+        ? [...messages, { id: generateUniqueId(), role: "user" as const, content: messageContent }]
+        : [...messages, { id: generateUniqueId(), role: "user" as const, content: messageContent }];
 
+      const { response } = await sendMessage(allMessages);
 
-      const assistantMessage: Message = {
-        id: generateUniqueId(),
-        role: "assistant",
-        content: response,
-      };
+      // Only add response to chat if it's not a silent review
+      if (!isSilentReview) {
+        const assistantMessage: Message = {
+          id: generateUniqueId(),
+          role: "assistant",
+          content: response,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      }
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      // Return the response for silent reviews
+      return response;
     } catch (error) {
       console.error("Error sending message:", error);
       setError(
