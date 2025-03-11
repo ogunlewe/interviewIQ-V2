@@ -31,6 +31,7 @@ import {
   StickyNote,
   Layers,
   MessageSquare,
+  ChevronDown,
 } from "lucide-react"
 import TopicSelector from "./topic-selector"
 import FeedbackPanel from "./feedback-panel"
@@ -54,6 +55,7 @@ export default function InterviewSimulator() {
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false)
   const [showCodeEditor, setShowCodeEditor] = useState<boolean>(false)
+  const [isCodeEditorExpanded, setIsCodeEditorExpanded] = useState<boolean>(false)
   const [showWhiteboard, setShowWhiteboard] = useState<boolean>(false)
   const [showNotes, setShowNotes] = useState<boolean>(false)
   const [isThinking, setIsThinking] = useState<boolean>(false)
@@ -73,6 +75,7 @@ export default function InterviewSimulator() {
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null)
   // Add a new state variable to track which messages have been spoken
   const [spokenMessageIds, setSpokenMessageIds] = useState<Set<string>>(new Set())
+  const [showScrollButton, setShowScrollButton] = useState(false)
 
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const thinkingTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -321,8 +324,13 @@ Focus on simulating the experience of a real technical interview
 
   const handleToggleCodeEditor = () => {
     setShowCodeEditor((prev) => !prev)
+    setIsCodeEditorExpanded(false)
     setShowWhiteboard(false)
     setShowNotes(false)
+  }
+
+  const handleExpandCodeEditor = () => {
+    setIsCodeEditorExpanded((prev) => !prev)
   }
 
   const handleToggleWhiteboard = () => {
@@ -564,6 +572,68 @@ Focus on simulating the experience of a real technical interview
     setElevenLabsVoiceId(voiceId)
     speechServiceRef.current?.setElevenLabsVoiceId(voiceId)
   }
+
+  // Add this effect after the displayMessages map
+  useEffect(() => {
+    // Auto-scroll to bottom when new messages arrive
+    const scrollArea = document.getElementById('chat-scroll-area');
+    if (scrollArea) {
+      const scrollContainer = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+      if (scrollContainer) {
+        const lastMessage = messages[messages.length - 1];
+        const isUserLastMessage = lastMessage?.role === 'user';
+        const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
+        
+        // Update scroll button visibility - hide when loading or at bottom
+        setShowScrollButton(!isNearBottom && !isLoading && messages.length > 0);
+        
+        // Auto-scroll in two cases:
+        // 1. User sent the message
+        // 2. User was already at bottom (within 100px)
+        if (isUserLastMessage || isNearBottom) {
+          requestAnimationFrame(() => {
+            scrollContainer.style.scrollBehavior = 'smooth';
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            setTimeout(() => {
+              scrollContainer.style.scrollBehavior = 'auto';
+            }, 1000);
+          });
+        }
+      }
+    }
+  }, [messages, isLoading]);
+
+  // Add scroll event listener to update button visibility
+  useEffect(() => {
+    const scrollArea = document.getElementById('chat-scroll-area');
+    if (!scrollArea) return;
+
+    const scrollContainer = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const isNearBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 100;
+      setShowScrollButton(!isNearBottom && messages.length > 0);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [messages.length]);
+
+  // Add scroll to bottom function
+  const scrollToBottom = () => {
+    const scrollArea = document.getElementById('chat-scroll-area');
+    if (scrollArea) {
+      const scrollContainer = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+      if (scrollContainer) {
+        scrollContainer.style.scrollBehavior = 'smooth';
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        setTimeout(() => {
+          scrollContainer.style.scrollBehavior = 'auto';
+        }, 1000);
+      }
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
@@ -825,7 +895,7 @@ Focus on simulating the experience of a real technical interview
                             </div>
                           )}
 
-                          <ScrollArea className="h-[400px] pr-4">
+                          <ScrollArea className="h-[400px] pr-4 relative" id="chat-scroll-area">
                             {displayMessages.length === 0 ? (
                               <div className="flex items-center justify-center h-full">
                                 <div className="text-center text-slate-500 dark:text-slate-400">
@@ -899,12 +969,45 @@ Focus on simulating the experience of a real technical interview
                                 )}
                               </div>
                             )}
+                            {/* Update scroll button style */}
+                            {showScrollButton && (
+                              <button
+                                onClick={scrollToBottom}
+                                className="absolute bottom-4 right-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-2 shadow-lg transition-all animate-bounce z-10"
+                              >
+                                <ChevronDown className="h-5 w-5" />
+                              </button>
+                            )}
                           </ScrollArea>
                         </CardContent>
 
                         {showCodeEditor && (
-                          <div className="px-6 pb-4">
-                            <CodeEditor />
+                          <div className={`${isCodeEditorExpanded ? 'fixed inset-0 z-50' : 'px-6 pb-6'}`}>
+                            <div className={`${isCodeEditorExpanded ? '' : 'min-h-[500px] relative'}`}>
+                              <CodeEditor 
+                                isExpanded={isCodeEditorExpanded}
+                                onToggleExpand={handleExpandCodeEditor}
+                                onSubmit={() => setShowCodeEditor(false)}
+                                onCodeRun={async (code, language) => {
+                                  // Create a message to send to Gemini about the code
+                                  const codeReviewMessage = `
+I've just written this code in ${language}:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Please review my code and provide:
+1. An analysis of the solution
+2. Any potential improvements
+3. Time and space complexity (if applicable)
+4. Any edge cases I might have missed
+`;
+                                  // Send the message using the existing chat mechanism
+                                  handleSendMessage(codeReviewMessage);
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
 

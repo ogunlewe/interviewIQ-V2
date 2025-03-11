@@ -21,6 +21,7 @@ import {
   Send,
   Volume2,
   VolumeX,
+  ChevronDown,
 } from "lucide-react"
 import type { Message } from "../lib/chat-service"
 import { SpeechRecognitionService } from "../lib/speech-service"
@@ -72,6 +73,7 @@ export default function EnhancedVideoCallInterface({
   const [isListening, setIsListening] = useState(false)
   const [interviewerVideo, setInterviewerVideo] = useState<string | null>(null)
   const [interviewerState, setInterviewerState] = useState<"idle" | "thinking" | "speaking">("idle")
+  const [showScrollButton, setShowScrollButton] = useState(false)
 
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -217,9 +219,56 @@ export default function EnhancedVideoCallInterface({
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+      const container = chatContainerRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+      if (container) {
+        const lastMessage = messages[messages.length - 1];
+        const isUserLastMessage = lastMessage?.role === 'user';
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+        
+        // Update scroll button visibility - hide when loading or at bottom
+        setShowScrollButton(!isNearBottom && !isLoading && messages.length > 0);
+        
+        // Auto-scroll in two cases:
+        // 1. User sent the message
+        // 2. User was already at bottom (within 100px)
+        if (isUserLastMessage || isNearBottom) {
+          requestAnimationFrame(() => {
+            container.style.scrollBehavior = 'smooth';
+            container.scrollTop = container.scrollHeight;
+            setTimeout(() => {
+              container.style.scrollBehavior = 'auto';
+            }, 1000);
+          });
+        }
+      }
     }
-  }, [messages])
+  }, [messages, isLoading]);
+
+  // Add scroll event listener to update button visibility
+  useEffect(() => {
+    const container = chatContainerRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      setShowScrollButton(!isNearBottom && messages.length > 0);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [messages.length]);
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    const container = chatContainerRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement;
+    if (container) {
+      container.style.scrollBehavior = 'smooth';
+      container.scrollTop = container.scrollHeight;
+      setTimeout(() => {
+        container.style.scrollBehavior = 'auto';
+      }, 1000);
+    }
+  };
 
   // Handle screen sharing
   const toggleScreenSharing = () => {
@@ -474,7 +523,7 @@ export default function EnhancedVideoCallInterface({
       <Card className="border border-slate-200 dark:border-slate-800">
         <CardContent className="p-0">
           <div className="flex flex-col h-[250px] sm:h-[300px]">
-            <ScrollArea className="flex-1 p-4" ref={chatContainerRef}>
+            <ScrollArea className="flex-1 p-4 relative" ref={chatContainerRef}>
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -528,6 +577,15 @@ export default function EnhancedVideoCallInterface({
                   </div>
                 )}
               </div>
+              {/* Update scroll button style */}
+              {showScrollButton && (
+                <button
+                  onClick={scrollToBottom}
+                  className="absolute bottom-4 right-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-2 shadow-lg transition-all animate-bounce z-10"
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </button>
+              )}
             </ScrollArea>
 
             <div className="border-t border-slate-200 dark:border-slate-800 p-3">

@@ -291,7 +291,7 @@ export default function Whiteboard() {
     setHistoryIndex(-1);
   };
 
-  // Save whiteboard as image
+
   const handleSave = () => {
     if (!canvasRef.current) return;
 
@@ -301,7 +301,7 @@ export default function Whiteboard() {
     link.click();
   };
 
-  // Available colors
+
   const colors = [
     "#000000", // Black
     "#FF0000", // Red

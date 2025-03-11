@@ -7,7 +7,7 @@ import { generateUniqueId } from "./utils";
 
 const API_URL = import.meta.env.VITE_API_URL || 
   (process.env.NODE_ENV === 'production' 
-    ? 'https://interview-api-coral.vercel.app/api/chat'
+    ? 'https://interview-api-zeta.vercel.app/api/chat'
     : 'http://localhost:3001/api/chat');
 
 export interface Message {
