@@ -1,30 +1,31 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useRef } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { AlertCircle, Cpu } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 // Hooks
 import { useInterviewState } from "../hooks/useInterviewState";
 import { useInterviewControls } from "../hooks/useInterviewControls";
 import { useInterviewMedia } from "../hooks/useInterviewMedia";
 import { useSpeechServices } from "../hooks/useSpeechServices";
-import { useChatInterface } from "../hooks/useInterviewChat";
+import { useChatInterface } from "../hooks/useInterviewChat.new";
 import { useCodeEditor } from "../hooks/useCodeEditor";
 
 // Components
-import { InterviewSettingsPanel } from "./interview/InterviewSettingsPanel";
-import { InterviewToolbar } from "./interview/InterviewToolbar";
+import  InterviewSettingsPanel  from "./interview/InterviewSettingsPanel.new";
+import { InterviewToolbar } from "./interview/InterviewToolbar.new";
 import { ChatInterface } from "./interview/ChatInterface";
 import { InterviewerProfile } from "./interview/InterviewerProfile";
-import EnhancedVideoCallInterface from "./interview/EnhancedVideoCallInterface";
+import EnhancedVideoCallInterface from "./interview/EnhancedVideoCallInterface.new";
 import CodeEditor from "./code-editor";
-import WhiteboardEditor from "./whiteboard-editor";
-import NotesEditor from "./notes-editor";
+import WhiteboardEditor from "./whiteboard-editor.new";
+import NotesEditor from "./notes-editor.new";
+import TopicSelector from "./topic-selector.new";
 
 export function InterviewSimulator() {
   // Tab state
@@ -64,7 +65,6 @@ export function InterviewSimulator() {
   // Interview media state from the custom hook
   const {
     showCodeEditor,
-    isCodeEditorExpanded,
     showWhiteboard,
     showNotes,
     audioEnabled,
@@ -72,7 +72,6 @@ export function InterviewSimulator() {
     showVideoCall,
     networkQuality,
     handleToggleCodeEditor,
-    handleExpandCodeEditor,
     handleToggleWhiteboard,
     handleToggleNotes,
     handleToggleAudio,
@@ -199,6 +198,10 @@ export function InterviewSimulator() {
           onToggleNotes={handleToggleNotes}
           onNextStage={handleNextStage}
           onThinkingTime={handleThinkingTime}
+          isSpeaking={isSpeaking}
+          continuousSpeech={continuousSpeech}
+          onStopSpeaking={stopSpeaking}
+          onToggleContinuousSpeech={toggleContinuousSpeech}
         />
 
         {showVideoCall ? (
@@ -214,17 +217,6 @@ export function InterviewSimulator() {
             interviewerAvatar={interviewer.avatar}
             networkQuality={networkQuality}
             isLoading={isLoading}
-            isSpeaking={isSpeaking}
-            onStopSpeaking={stopSpeaking}
-            continuousSpeech={continuousSpeech}
-            onToggleContinuousSpeech={toggleContinuousSpeech}
-            spokenMessageIds={spokenMessageIds}
-            onMessageSpoken={(messageId) => {
-              const message = displayMessages.find((m) => m.id === messageId);
-              if (message) {
-                speakMessage(message.content, false, messageId);
-              }
-            }}
           />
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -241,8 +233,30 @@ export function InterviewSimulator() {
             <div className="md:col-span-2 order-1 md:order-2">
               <Card className="border-slate-200 dark:border-slate-800">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">
-                    Interview Conversation
+                  <CardTitle className="text-lg flex justify-between items-center">
+                    <span>Interview Conversation</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant={continuousSpeech ? "default" : "outline"}
+                        size="sm"
+                        onClick={
+                          isSpeaking ? stopSpeaking : toggleContinuousSpeech
+                        }
+                        className={
+                          isSpeaking
+                            ? "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                            : continuousSpeech
+                            ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                            : ""
+                        }
+                      >
+                        {isSpeaking
+                          ? "Stop Voice"
+                          : continuousSpeech
+                          ? "Voice On"
+                          : "Voice Off"}
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -279,95 +293,35 @@ export function InterviewSimulator() {
         )}
 
         {showCodeEditor && (
-          <div
-            className={
-              isCodeEditorExpanded ? "absolute inset-0 z-50 bg-background" : ""
-            }
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">Code Editor</h3>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExpandCodeEditor}
-                >
-                  {isCodeEditorExpanded ? "Minimize" : "Expand"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleToggleCodeEditor}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-            <Card className="border-slate-200 dark:border-slate-800">
-              <CardContent className="p-0">
-                <CodeEditor
-                  language={language}
-                  code={code}
-                  onLanguageChange={setLanguage}
-                  onCodeChange={setCode}
-                  editorRef={editorRef}
-                  onExecuteCode={executeCode}
-                  onReviewCode={() => {
-                    const feedback = reviewCode(code, language);
-                    if (feedback) {
-                      sendMessage(
-                        `Can you review this code?\n\n\`\`\`${language}\n${code}\n\`\`\``,
-                        systemPrompt,
-                        interviewer.name
-                      );
-                    }
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <CodeEditor
+            language={language}
+            code={code}
+            onLanguageChange={setLanguage}
+            onCodeChange={setCode}
+            editorRef={editorRef}
+            onExecuteCode={executeCode}
+            onReviewCode={() => {
+              const feedback = reviewCode(code, language);
+              if (feedback) {
+                sendMessage(
+                  `Can you review this code?\n\n\`\`\`${language}\n${code}\n\`\`\``,
+                  systemPrompt,
+                  interviewer.name
+                );
+              }
+            }}
+          />
         )}
 
         {showWhiteboard && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-lg">
-                <span>Whiteboard</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleToggleWhiteboard}
-                >
-                  Close
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <WhiteboardEditor
-                value={whiteboard}
-                onChange={(value) => setWhiteboard(value)}
-              />
-            </CardContent>
-          </Card>
+          <WhiteboardEditor
+            value={whiteboard}
+            onChange={(value) => setWhiteboard(value)}
+          />
         )}
 
         {showNotes && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-lg">
-                <span>Notes</span>
-                <Button variant="outline" size="sm" onClick={handleToggleNotes}>
-                  Close
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <NotesEditor
-                value={notes}
-                onChange={(value) => setNotes(value)}
-              />
-            </CardContent>
-          </Card>
+          <NotesEditor value={notes} onChange={(value) => setNotes(value)} />
         )}
       </div>
     );

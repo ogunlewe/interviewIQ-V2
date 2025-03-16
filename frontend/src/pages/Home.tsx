@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import InterviewSimulator from "../components/interview-simulator";
+import { InterviewSimulator } from "../components/interview-simulator.new";
 import InterviewPrep from "../components/interview-prep";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 import { Button } from "../components/ui/button";
 import { Calendar, Clock, FileText, Briefcase, BookOpen } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
@@ -25,22 +30,24 @@ export default function Home() {
           <div className="absolute top-4 right-4 sm:top-8 sm:right-8">
             <div className="flex items-center gap-3">
               <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium">{currentUser?.displayName || currentUser?.email}</p>
-                <Button 
-                  variant="link" 
-                  onClick={logout} 
+                <p className="text-sm font-medium">
+                  {currentUser?.displayName || currentUser?.email}
+                </p>
+                <Button
+                  variant="link"
+                  onClick={logout}
                   className="h-auto p-0 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   Log out
                 </Button>
               </div>
-              
+
               <Avatar className="h-10 w-10 border border-slate-200 dark:border-slate-700">
                 <AvatarImage src={currentUser?.photoURL || undefined} />
                 <AvatarFallback>
-                  {currentUser?.displayName 
-                    ? currentUser.displayName.charAt(0).toUpperCase() 
-                    : currentUser?.email?.charAt(0).toUpperCase() || 'U'}
+                  {currentUser?.displayName
+                    ? currentUser.displayName.charAt(0).toUpperCase()
+                    : currentUser?.email?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -98,25 +105,27 @@ export default function Home() {
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
                 interviewIQ
               </h1>
-              
+
               <div className="flex items-center gap-3">
                 <div className="hidden sm:block text-right">
-                  <p className="text-sm font-medium">{currentUser?.displayName || currentUser?.email}</p>
-                  <Button 
-                    variant="link" 
-                    onClick={logout} 
+                  <p className="text-sm font-medium">
+                    {currentUser?.displayName || currentUser?.email}
+                  </p>
+                  <Button
+                    variant="link"
+                    onClick={logout}
                     className="h-auto p-0 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                   >
                     Log out
                   </Button>
                 </div>
-                
+
                 <Avatar className="h-10 w-10 border border-slate-200 dark:border-slate-700">
                   <AvatarImage src={currentUser?.photoURL || undefined} />
                   <AvatarFallback>
-                    {currentUser?.displayName 
-                      ? currentUser.displayName.charAt(0).toUpperCase() 
-                      : currentUser?.email?.charAt(0).toUpperCase() || 'U'}
+                    {currentUser?.displayName
+                      ? currentUser.displayName.charAt(0).toUpperCase()
+                      : currentUser?.email?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </div>

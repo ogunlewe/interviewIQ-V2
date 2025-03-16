@@ -1,404 +1,304 @@
-"use client";
-
-import type React from "react";
-
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Button } from "./ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Play, Copy, Maximize2, Minimize2, Loader2, Send, X } from "lucide-react";
-import Editor, { useMonaco, type Monaco, type OnMount } from "@monaco-editor/react";
-import { TerminalOutput } from "./terminal-output";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Play, Send, Maximize2, Minimize2, Clock, MessageSquare, Sparkles, Check } from "lucide-react";
 import { Card } from "./ui/card";
+import { TerminalOutput } from "./terminal-output";
+import { Badge } from "./ui/badge";
+import { Separator } from "./ui/seperator";
+import { ScrollArea } from "./ui/scroll-area";
+import Editor, {useMonaco} from "@monaco-editor/react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { useCodeEditor, TestCase } from "../hooks/useCodeEditor";
+
+
+
+
 
 interface CodeEditorProps {
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
-  onCodeRun?: (code: string, language: string) => void;
-  onSubmit?: () => void;
+  onSubmit: ((code: string) => void) | undefined;
+  code: string
+  editorRef: any
+  isExpanded: false
 }
 
-interface CodeSuggestion {
-  startLine: number;
-  endLine: number;
-  suggestion: string;
-  isHighlighted: boolean;
-}
 
-export interface CodeEditorRef {
-  parseSuggestion: (message: string) => void;
-}
 
-const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
-  isExpanded = false,
-  onToggleExpand,
-  onCodeRun,
+
+const CodeEditor = forwardRef<any, CodeEditorProps>(({
+  editorRef,
   onSubmit,
 }, ref) => {
-  const [code, setCode] = useState(`// Write your code here
-function example() {
-  // Your solution
-  return true;
-}
-`);
-  const [language, setLanguage] = useState("javascript");
-  const [output, setOutput] = useState("");
-  const [isExecuting, setIsExecuting] = useState(false);
-  const editorRef = useRef<any>(null);
-  const decorationsRef = useRef<string[]>([]);
-  const monaco = useMonaco();
-  const [suggestions, setSuggestions] = useState<CodeSuggestion[]>([]);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const monaco = useMonaco();
+    const monacoEditorRef = useRef(null);
+  const {
+    code,
+    language,
+    isExecuting,
+    output,
+    testCases,
+    feedback,
+    showFeedback,
+    isReviewing,
+    handleLanguageChange,
+    handleRunCode,
+    handleCodeChange,
+    acknowledgeFeedback,
 
-  // Function to handle editor mount
-  const handleEditorDidMount: OnMount = (editor, monaco) => {
-    editorRef.current = editor;
-
-    // Configure editor settings
-    editor.updateOptions({
-      minimap: { enabled: true },
-      scrollBeyondLastLine: false,
-      fontSize: 14,
-      lineNumbers: "on",
-      roundedSelection: true,
-      automaticLayout: true,
-      glyphMargin: true,
-    });
-  };
-
-  const handleCodeChange = (value: string | undefined) => {
-    if (value !== undefined) {
-      setCode(value);
+  } = useCodeEditor({
+    onCodeChange: (newCode) => {
+      // Additional actions on code change if needed
     }
-  };
-
-  const handleLanguageChange = (value: string) => {
-    // Map language values to Monaco language IDs
-    const languageMap: { [key: string]: string } = {
-      javascript: "javascript",
-      typescript: "typescript",
-      python: "python",
-      java: "java",
-      csharp: "csharp",
-    };
-    setLanguage(value);
-
-    // Update Monaco language if editor is mounted
-    if (editorRef.current) {
-      const model = (editorRef.current as any).getModel();
-      if (model) {
-        monaco?.editor.setModelLanguage(model, languageMap[value]);
-      }
-    }
-  };
-
-  const handleRunCode = async () => {
-    setIsExecuting(true);
-    setOutput(""); // Clear previous output
-
-    try {
-      if (language === "javascript") {
-        try {
-          // Create a sandboxed environment for code execution
-          const sandboxedCode = `
-            try {
-              ${code}
-              
-              // Execute main function if it exists
-              if (typeof main === 'function') {
-                main();
-              }
-            } catch (error) {
-              console.error(error);
-            }
-          `;
-
-          // Create a virtual console to capture output
-          const outputs: string[] = [];
-          const virtualConsole = {
-            log: (...args: any[]) => {
-              outputs.push(args.map(arg => 
-                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-              ).join(' '));
-            },
-            error: (...args: any[]) => {
-              outputs.push('Error: ' + args.map(arg => 
-                arg instanceof Error ? arg.message : String(arg)
-              ).join(' '));
-            },
-            warn: (...args: any[]) => {
-              outputs.push('Warning: ' + args.join(' '));
-            }
-          };
-
-          // Execute the code with the virtual console
-          const evaluateCode = new Function('console', sandboxedCode);
-          evaluateCode(virtualConsole);
-
-          // Set the output
-          if (outputs.length > 0) {
-            setOutput(outputs.join('\n'));
-          } else {
-            setOutput('Code executed successfully. Awaiting review...');
-          }
-
-          // Send code for review without showing in chat
-          if (onCodeRun) {
-            console.log('Sending code for review...');
-            const reviewMessage = `@silent_review
-Please review this code and provide ONLY line-specific suggestions in the following format:
-[LINE X]: suggestion text
-or
-[LINE X-Y]: suggestion text for multiple lines
-
-Example response format:
-[LINE 2]: Consider adding parameter validation
-[LINE 5-7]: This loop could be simplified using array methods
-
-Code to review:
-\`\`\`${language}
-${code}
-\`\`\``;
-            
-            console.log('Review message:', reviewMessage);
-            onCodeRun(reviewMessage, language);
-          }
-
-        } catch (error: any) {
-          setOutput(`Runtime Error: ${error.message}`);
-          console.error('Code execution error:', error);
-        }
-      } else {
-        setOutput(`Note: ${language} execution is not yet implemented. Awaiting review...`);
-        if (onCodeRun) {
-          onCodeRun(`@silent_review\nPlease review this ${language} code and provide line-specific suggestions only.\n\`\`\`${language}\n${code}\n\`\`\``, language);
-        }
-      }
-    } catch (error: any) {
-      setOutput(`Error: ${error.message}`);
-      console.error('Unexpected error:', error);
-    } finally {
-      setIsExecuting(false);
-    }
-  };
+  });
 
   const handleSubmitCode = () => {
-    // Send code to interviewer for final review
-    if (onCodeRun) {
-      const finalReviewMessage = `
-Please provide a final review of this ${language} solution:
-
-\`\`\`${language}
-${code}
-\`\`\`
-
-Please provide:
-1. Overall assessment
-2. What works well
-3. What could be improved
-4. Final score (1-5)
-5. Any specific suggestions for improvement using [LINE X]: format
-`;
-      onCodeRun(finalReviewMessage, language);
-    }
-    // Close the editor if onSubmit is provided
     if (onSubmit) {
-      onSubmit();
+      onSubmit(code);
     }
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(code);
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+    setTimeout(() => {
+      if (monacoEditorRef.current) {
+        monacoEditorRef.current.layout();
+      }
+    }, 100);
   };
 
-  // Function to add a new suggestion
-  const addSuggestion = useCallback((startLine: number, endLine: number, suggestion: string) => {
-    setSuggestions(prev => [...prev, {
-      startLine,
-      endLine,
-      suggestion,
-      isHighlighted: true
-    }]);
+  const handleEditorDidMount = (editor: any) => {
+    monacoEditorRef.current = editor;
 
-    // Highlight the code in the editor
-    if (editorRef.current && monaco) {
-      const editor = editorRef.current;
-      
-      // Clear previous decorations
-      if (decorationsRef.current.length) {
-        editor.deltaDecorations(decorationsRef.current, []);
-      }
-
-      // Add new decoration
-      const newDecorations = editor.deltaDecorations([], [{
-        range: new monaco.Range(startLine, 1, endLine, 1),
-        options: {
-          isWholeLine: true,
-          className: 'highlighted-code-line',
-          glyphMarginClassName: 'suggestion-glyph',
-          glyphMarginHoverMessage: { value: suggestion },
-          marginClassName: 'suggestion-margin'
-        }
-      }]);
-
-      // Store new decorations
-      decorationsRef.current = newDecorations;
-
-      // Remove highlight after 5 seconds
-      setTimeout(() => {
-        if (editor && decorationsRef.current.length) {
-          editor.deltaDecorations(decorationsRef.current, []);
-          decorationsRef.current = [];
-          setSuggestions(prev => 
-            prev.map(s => 
-              s.startLine === startLine && s.endLine === endLine
-                ? { ...s, isHighlighted: false }
-                : s
-            )
-          );
-        }
-      }, 5000);
+    if (editorRef) {
+      editorRef.current = {
+        getCode: () => editor.getValue(),
+      };
     }
-  }, [monaco]);
-
-  // Expose methods via ref
-  useImperativeHandle(ref, () => ({
-    parseSuggestion: (message: string) => {
-      console.log('Parsing suggestion:', message);
-      // Extract line numbers and suggestions using regex
-      const regex = /\[LINE (\d+)(?:-(\d+))?\]:\s*(.*?)(?=\[LINE|$)/gs;
-      let match;
-      
-      // Clear previous suggestions
-      setSuggestions([]);
-      
-      while ((match = regex.exec(message)) !== null) {
-        const startLine = parseInt(match[1]);
-        const endLine = match[2] ? parseInt(match[2]) : startLine;
-        const suggestion = match[3].trim();
-        
-        console.log(`Adding suggestion for lines ${startLine}-${endLine}: ${suggestion}`);
-        addSuggestion(startLine, endLine, suggestion);
-      }
-    }
-  }), [addSuggestion]);
+  };
 
   return (
-    <Card className={`${isExpanded ? 'fixed inset-0 z-50' : 'relative'} bg-background`}>
-      <div className="flex items-center justify-between p-2 border-b">
-        <div className="flex items-center space-x-2">
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="px-2 py-1 border rounded bg-background"
-          >
-            <option value="javascript">JavaScript</option>
-            <option value="typescript">TypeScript</option>
-            <option value="python">Python</option>
-            <option value="java">Java</option>
-            <option value="csharp">C#</option>
-          </select>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleCopyCode}>
-            <Copy className="h-4 w-4 mr-1" />
-            Copy
-          </Button>
+    <Card className={`${isExpanded ? 'fixed inset-0 z-50' : 'h-full'} bg-[#1e1e1e] flex flex-col overflow-hidden`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-[#2f3139]">
+        <Select value={language} onValueChange={handleLanguageChange}>
+          <SelectTrigger className="w-[140px] h-8 text-sm bg-transparent border-[#2f3139]">
+            <SelectValue placeholder="Select language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="javascript">JavaScript</SelectItem>
+            <SelectItem value="typescript">TypeScript</SelectItem>
+            <SelectItem value="python">Python</SelectItem>
+            <SelectItem value="java">Java</SelectItem>
+            <SelectItem value="cpp">C++</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleRunCode}
             disabled={isExecuting}
+            className="h-8 px-3 hover:bg-[#2f3139] text-[#d4d4d4]"
           >
             {isExecuting ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <>
+                <Clock className="h-4 w-4 mr-1.5 animate-spin" />
+                Running
+              </>
             ) : (
-              <Play className="h-4 w-4 mr-1" />
+              <>
+                <Play className="h-4 w-4 mr-1.5" />
+                Run
+              </>
             )}
-            {isExecuting ? "Running..." : "Run"}
           </Button>
-          <Button variant="outline" size="sm" onClick={onToggleExpand}>
-            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-          <Button variant="default" size="sm" onClick={handleSubmitCode}>
-            <Send className="h-4 w-4 mr-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSubmitCode}
+            className="h-8 px-3 hover:bg-[#2f3139] text-[#d4d4d4]"
+          >
+            <Send className="h-4 w-4 mr-1.5" />
             Submit
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleExpand}
+            className="h-8 w-8 hover:bg-[#2f3139] text-[#d4d4d4]"
+          >
+            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
-      <style>
-        {`
-        .highlighted-code-line {
-          background-color: rgba(97, 175, 239, 0.1);
-          border-left: 2px solid #61afef;
-        }
-        .suggestion-glyph {
-          background-color: #61afef;
-          width: 8px !important;
-          height: 8px !important;
-          border-radius: 50%;
-          margin-left: 5px;
-          cursor: pointer;
-        }
-        .suggestion-margin {
-          background-color: rgba(97, 175, 239, 0.1);
-        }
-        `}
-      </style>
+      {/* Editor */}
+      <div className="flex-1 flex">
+        <div className="flex-1 overflow-hidden">
+          <Editor
+            height="100%"
+            defaultLanguage="javascript"
+            language={language}
+            value={code}
+            onChange={handleCodeChange}
+            options={{
+              readOnly: false,
+              minimap: { enabled: isExpanded },
+              fontSize: 14,
+              lineNumbers: "on",
+              wordWrap: "on",
+              roundedSelection: false,
+              scrollBeyondLastLine: false,
+              padding: { top: 16 },
+              lineHeight: 21,
+              fontFamily: "'Fira Code', monospace",
+              renderLineHighlight: 'all',
+              cursorStyle: 'line',
+              cursorWidth: 2, 
+              automaticLayout: true,
+            }}
+            onMount = {handleEditorDidMount}
+          />
+        </div>
 
-      <div className={`${isExpanded ? 'h-[calc(100vh-10rem)]' : 'h-[500px]'}`}>
-        <Editor
-          height="100%"
-          defaultLanguage="javascript"
-          language={language}
-          value={code}
-          onChange={handleCodeChange}
-          theme="vs-dark"
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            lineNumbers: "on",
-            glyphMargin: true,
-            folding: true,
-            lineDecorationsWidth: 5,
-          }}
-          onMount={handleEditorDidMount}
-        />
-      </div>
-
-      {suggestions.length > 0 && (
-        <div className="absolute bottom-4 right-4 max-w-md bg-background border rounded-lg shadow-lg p-4 space-y-2 overflow-y-auto max-h-48">
-          {suggestions.map((suggestion, index) => (
-            <div
-              key={index}
-              className={`p-2 rounded ${
-                suggestion.isHighlighted
-                  ? 'bg-blue-100 dark:bg-blue-900/20'
-                  : 'bg-muted'
-              }`}
-            >
-              <div className="text-xs text-muted-foreground">
-                Line {suggestion.startLine}
-                {suggestion.endLine !== suggestion.startLine && `-${suggestion.endLine}`}
+        {/* Test Cases & Output Panel */}
+        <div className="w-[300px] border-l border-[#2f3139] bg-[#1e1e1e] flex flex-col">
+          <Tabs defaultValue="testcases" className="flex flex-col h-full">
+            <TabsList className="px-2 pt-2 justify-start bg-transparent border-b border-[#2f3139]">
+              <TabsTrigger value="testcases" className="data-[state=active]:bg-[#2f3139] data-[state=active]:text-white">
+                Test Cases
+              </TabsTrigger>
+              <TabsTrigger 
+                value="feedback" 
+                className="data-[state=active]:bg-[#2f3139] data-[state=active]:text-white relative"
+                disabled={!feedback}
+              >
+                Feedback
+                {showFeedback && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-purple-500"></span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="testcases" className="flex-1 overflow-auto">
+              <div className="flex-1 overflow-auto">
+                {testCases.map((testCase, index) => (
+                  <div
+                    key={index}
+                    className="p-3 border-b border-[#2f3139] last:border-b-0"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-[#d4d4d4]">Case {index + 1}</span>
+                      <Badge
+                        variant={
+                          testCase.status === "success" ? "success" :
+                          testCase.status === "error" ? "destructive" :
+                          "secondary"
+                        }
+                        className={
+                          testCase.status === "success" ? "bg-green-500/10 text-green-500" :
+                          testCase.status === "error" ? "bg-red-500/10 text-red-500" :
+                          ""
+                        }
+                      >
+                        {testCase.status === "running" ? (
+                          <>
+                            <Clock className="h-3 w-3 mr-1 animate-spin" />
+                            Running
+                          </>
+                        ) : testCase.status === "success" ? (
+                          "Passed"
+                        ) : testCase.status === "error" ? (
+                          "Failed"
+                        ) : (
+                          "Pending"
+                        )}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="font-mono bg-[#2f3139] p-2 rounded text-xs text-[#d4d4d4]">
+                        Input: {testCase.input}
+                      </div>
+                      <div className="font-mono bg-[#2f3139] p-2 rounded text-xs text-[#d4d4d4]">
+                        Expected: {testCase.expected}
+                      </div>
+                      {testCase.actual && (
+                        <div className="font-mono bg-[#2f3139] p-2 rounded text-xs text-[#d4d4d4]">
+                          Output: {testCase.actual}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="text-sm">{suggestion.suggestion}</div>
-            </div>
-          ))}
-        </div>
-      )}
 
-      <TerminalOutput
-        output={output}
-        isLoading={isExecuting}
-        onSubmit={handleSubmitCode}
-      />
+              {/* Terminal Output */}
+              {output && (
+                <>
+                  <Separator className="bg-[#2f3139]" />
+                  <div className="p-3">
+                    <h3 className="font-medium mb-2 text-[#d4d4d4]">Console Output</h3>
+                    <TerminalOutput output={output} isLoading={isReviewing} />
+                  </div>
+                </>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="feedback" className="flex-1 overflow-hidden flex flex-col p-0">
+              {feedback ? (
+                <div className="flex-1 overflow-auto">
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-8 w-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                        <MessageSquare className="h-4 w-4 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-[#d4d4d4]">Interviewer Feedback</h3>
+                        <p className="text-xs text-[#a0a0a0]">Code review and suggestions</p>
+                      </div>
+                    </div>
+                    
+                    <ScrollArea className="h-[calc(100vh-200px)]">
+                      <div className="bg-[#2a2a2a] rounded-md p-4 text-sm text-[#d4d4d4] whitespace-pre-wrap leading-relaxed">
+                        {feedback.split('\n\n').map((paragraph, i) => (
+                          <p key={i} className="mb-3 last:mb-0">
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300"
+                        onClick={acknowledgeFeedback}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Acknowledge
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-[#6b737c]">
+                  <div className="text-center">
+                    <Sparkles className="h-8 w-8 mx-auto mb-2 text-[#6b737c]" />
+                    <p>Run your code to get interviewer feedback</p>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </Card>
   );
 });
+
+CodeEditor.displayName = "CodeEditor";
 
 export default CodeEditor;

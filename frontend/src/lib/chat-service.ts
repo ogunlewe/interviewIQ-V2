@@ -1,14 +1,9 @@
-"use client";
-
 import type React from "react";
 import { useState } from "react";
 import { generateUniqueId } from "./utils";
 
-
-const API_URL = import.meta.env.VITE_API_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://interview-api-zeta.vercel.app/api/chat'
-    : 'http://localhost:3001/api/chat');
+// In development, use the proxy through Vite's dev server
+const API_URL = '/api/chat';
 
 export interface Message {
   id: string;
@@ -16,13 +11,12 @@ export interface Message {
   content: string;
 }
 
-
 export async function sendMessage(
   messages: Message[]
 ): Promise<{ response: string }> {
   try {
-    console.log('Sending request to:', API_URL); // Debug log
-    console.log('Messages:', messages); // Debug log
+    console.log('Sending request to:', API_URL);
+    console.log('Messages:', messages);
     
     const response = await fetch(API_URL, {
       method: "POST",
@@ -34,6 +28,13 @@ export async function sendMessage(
     });
 
     if (!response.ok) {
+      // If we get a network error, fall back to local execution only
+      if (response.status === 0 || response.status === 404) {
+        return {
+          response: "Note: Code review is temporarily unavailable. Your code has been executed locally."
+        };
+      }
+
       const errorText = await response.text();
       console.error('Server response:', response.status, errorText);
       try {
@@ -45,14 +46,19 @@ export async function sendMessage(
     }
 
     const jsonResponse = await response.json();
-    console.log('Received response:', jsonResponse); // Debug log
+    console.log('Received response:', jsonResponse);
     return jsonResponse;
   } catch (error) {
     console.error("Error sending message:", error);
+    // Return a fallback response for network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return {
+        response: "Note: Code review is temporarily unavailable. Your code has been executed locally."
+      };
+    }
     throw error;
   }
 }
-
 
 export function useChat(options: {
   initialMessages?: Message[];
@@ -120,6 +126,8 @@ export function useChat(options: {
       setError(
         error instanceof Error ? error.message : "An unknown error occurred"
       );
+      // Return a fallback response
+      return "Note: Code review is temporarily unavailable.";
     } finally {
       setIsLoading(false);
     }
