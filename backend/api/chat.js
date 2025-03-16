@@ -1,17 +1,26 @@
 // api/chat.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// Allowed origins - update with your actual URLs
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://interviewiq-v2.vercel.app'
+];
+
 export default async function handler(req, res) {
-  // Set CORS headers
+  // Dynamically set CORS headers based on the request origin
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Access-Control-Allow-Credentials", true);
-  res.setHeader("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
   );
 
-  // Handle OPTIONS request
+  // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
@@ -56,7 +65,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({ response: text });
   } catch (error) {
-    console.error("Error in chat endpoint:", error);
+    console.error("Error in chat endpoint:", error); 
     res.status(500).json({
       error: "There was an error processing your request",
     });
