@@ -97,7 +97,8 @@ Remember, your goal is to simulate an authentic interview experience, challengin
       abortControllerRef.current = new AbortController();
 
       try {
-       `${process.env.VITE_API_URL}`;
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/chat`;
+
         const requestBody = {
           messages: conversationHistory,
           systemPrompt,
