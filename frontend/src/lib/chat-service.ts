@@ -3,7 +3,8 @@ import { useState } from "react";
 import { generateUniqueId } from "./utils";
 
 // In development, use the proxy through Vite's dev server
-const API_URL = '/api/chat';
+const API_URL = import.meta.env.VITE_API_URL || '/api/chat';
+
 
 export interface Message {
   id: string;
