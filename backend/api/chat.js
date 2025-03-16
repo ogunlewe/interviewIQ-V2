@@ -22,32 +22,40 @@ export default async function handler(req, res) {
 
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
+    console.log("OPTIONS request received; returning 200.");
     res.status(200).end();
     return;
   }
 
   // Only allow POST
   if (req.method !== "POST") {
+    console.error("Method not allowed:", req.method);
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { messages } = req.body;
+    console.log("Incoming request body:", req.body);
 
+    const { messages } = req.body;
     if (!messages || !Array.isArray(messages)) {
+      console.error("Invalid request: messages array is required");
       return res
         .status(400)
         .json({ error: "Invalid request: messages array is required" });
     }
 
-    // Extract system message and conversation history
-    const systemMessage =
-      messages.find((m) => m.role === "system")?.content || "";
+    // Extract system message
+    const systemMessage = messages.find((m) => m.role === "system")?.content || "";
+    console.log("System message:", systemMessage);
+
+    // Build conversation history string
     const conversationHistory = messages
       .filter((m) => m.role !== "system")
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n\n");
+    console.log("Conversation history:", conversationHistory);
 
+    // Construct prompt
     const prompt = `
       ${systemMessage}
       
@@ -56,16 +64,33 @@ export default async function handler(req, res) {
       
       Respond to the user's last message. Remember to stay in character as a technical HR interviewer.
     `;
+    console.log("Final prompt:", prompt);
 
     // Initialize Gemini
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("Gemini API key missing");
+      return res.status(500).json({ error: "Gemini API key is missing" });
+    }
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0" });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
+    // Send request to Gemini
+    console.log("Sending prompt to Gemini...");
+    const result = await model.generateContent(prompt);
+    console.log("Gemini raw result:", result);
+
+    if (!result || !result.response) {
+      console.error("Gemini response object invalid");
+      return res.status(500).json({ error: "Invalid Gemini response object" });
+    }
+
+    const text = result.response.text();
+    console.log("Gemini text response:", text);
+
+    // Send the text back to the client
     res.status(200).json({ response: text });
   } catch (error) {
-    console.error("Error in chat endpoint:", error); 
+    console.error("Error in chat endpoint:", error);
     res.status(500).json({
       error: "There was an error processing your request",
     });

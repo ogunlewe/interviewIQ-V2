@@ -1,5 +1,7 @@
+console.log("server is starting ...");
+
+
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -8,26 +10,31 @@ dotenv.config({ path: '.env' });
 const app = express();
 const SERVER_TIMEOUT = 60000; // 60 seconds
 
-// Set a dynamic CORS middleware
+// Allowed origins for dynamic CORS
 const allowedOrigins = [
   'http://localhost:5173',
   'https://interviewiq-v2.vercel.app'
 ];
 
+// Dynamic CORS middleware
 app.use((req, res, next) => {
   const requestOrigin = req.headers.origin;
   if (allowedOrigins.includes(requestOrigin)) {
+    console.log("CORS allowed for origin:", requestOrigin);
     res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+  } else {
+    console.log("CORS not allowed for origin:", requestOrigin);
   }
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
-  
+
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
+    console.log("OPTIONS request received; returning 200.");
     return res.sendStatus(200);
   }
-  
+
   next();
 });
 
@@ -42,7 +49,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Your Gemini helper function and endpoint below remain the same
+// Helper function to handle Gemini API calls with timeout
 async function generateGeminiResponse(prompt) {
   const GEMINI_TIMEOUT = 30000; // 30 seconds
 
@@ -56,44 +63,68 @@ async function generateGeminiResponse(prompt) {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0" });
-    
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    console.log("Sending prompt to Gemini:", prompt);
     // Race between API call and timeout
     const result = await Promise.race([
       model.generateContent(prompt),
       timeoutPromise
     ]);
 
-    return result.response.text();
+    console.log("Gemini raw result:", result);
+
+    if (!result || !result.response) {
+      throw new Error("Gemini API returned invalid response");
+    }
+
+    const text = result.response.text();
+    console.log("Gemini text response:", text);
+
+    return text;
   } catch (error) {
     console.error('Gemini API error:', error);
     throw error;
   }
 }
 
+// POST /api/chat endpoint
 app.post("/api/chat", async (req, res) => {
   try {
+    console.log("Incoming request body:", req.body);
+
     const { messages } = req.body;
     if (!messages || !Array.isArray(messages)) {
+      console.error("Invalid request: messages array is required");
       return res.status(400).json({ error: "Invalid request: messages array is required" });
     }
 
+    // Extract system message
     const systemMessage = messages.find((m) => m.role === "system")?.content || "";
+    console.log("System message:", systemMessage);
+
+    // Build conversation history
     const conversationHistory = messages
       .filter((m) => m.role !== "system")
       .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n\n");
+    console.log("Conversation history:", conversationHistory);
 
+    // Construct prompt
     const prompt = `
       ${systemMessage}
-      
+
       Conversation history:
       ${conversationHistory}
-      
+
       Respond to the user's last message. Remember to stay in character as a technical interviewer.
     `;
+    console.log("Final prompt:", prompt);
 
+    // Send prompt to Gemini
     const response = await generateGeminiResponse(prompt);
+    console.log("Final Gemini response to client:", response);
+
     res.status(200).json({ response });
   } catch (error) {
     console.error("Error in chat endpoint:", error);
@@ -113,6 +144,7 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
+// Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
