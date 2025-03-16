@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 
 // Configure CORS for local development
 app.use(cors({
-  origin: 'https://interview-api-zeta.vercel.app/api/chat || http://localhost:5173',
+  origin: 'https://interview-api-zeta.vercel.app/api/chat',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
