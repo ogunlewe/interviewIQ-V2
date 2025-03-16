@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 
 // Configure CORS for local development
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://interview-api-zeta.vercel.app/api/chat || http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
@@ -107,7 +107,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.VITE_API_URL !== 'production') {
   const PORT = process.env.PORT || 3001;
   const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
